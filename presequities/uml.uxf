@@ -1,0 +1,20 @@
+<diagram program="umletino" version="15.1"><zoom_level>18</zoom_level><element><id>UMLClass</id><coordinates><x>0</x><y>0</y><w>324</w><h>216</h></coordinates><panel_attributes>user
+--
+clerk_user: varchar(100) (PK)
+token: varchar(100)
+</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>360</x><y>0</y><w>324</w><h>216</h></coordinates><panel_attributes>projects
+--
+timestamp: timestampz
+project_name: varchar(50)
+project_description: string
+project_image_link: string
+project_duration: string
+</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>0</x><y>270</y><w>360</w><h>216</h></coordinates><panel_attributes>achievements
+--
+achievements_id: id
+achievements_name: varchar(50)
+achievements_year: year
+achievements_desc: string</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>0</x><y>630</y><w>360</w><h>216</h></coordinates><panel_attributes>achievements_image
+--
+achievements_id (FK)
+image_url: string</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>144</x><y>468</y><w>54</w><h>198</h></coordinates><panel_attributes>lt=&lt;&lt;-</panel_attributes><additional_attributes>10;90;10;10</additional_attributes></element></diagram>

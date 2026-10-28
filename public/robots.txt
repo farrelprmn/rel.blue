@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /d/
+Disallow: /api/
+
+# For language models: the whole site as markdown, generated live from the database
+# LLMs: https://rel.blue/llm.md
+# (also served at https://rel.blue/llms.txt)
+
+Sitemap: https://rel.blue/sitemap.xml

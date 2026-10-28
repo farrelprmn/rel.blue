@@ -1,0 +1,1260 @@
+<title>Farrel's Rooftop</title>
+<meta name="claude:viewport-fit-sides" content="cover" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&display=swap"
+/>
+<style>
+  /* Layout: one quiet nav line top-left, intro on the left; a character-grid rooftop runs along the bottom where the cat lives */
+  :root {
+    --bg: #1c1e23;
+    --fg: #e3ddd4;
+    --muted: #8a847c;
+    --dim: #514c47;
+    --orange: #e98a3c;
+    --card: #25272d;
+    --line: rgb(255 255 255 / 0.08);
+    --mono:
+      "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    color-scheme: dark;
+  }
+  html,
+  body {
+    height: 100%;
+  }
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--mono);
+    overflow: hidden;
+  }
+  canvas {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    z-index: 3;
+    pointer-events: none;
+  }
+
+  .col {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 2;
+    width: min(900px, 62vw);
+    display: grid;
+    grid-template-rows: auto 1fr;
+    gap: 24px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: calc(env(safe-area-inset-top, 0px) + 26px)
+      calc(env(safe-area-inset-bottom, 0px) + 26vh);
+    pointer-events: none;
+  }
+  .col a,
+  .col button,
+  .tagline,
+  .about,
+  .links,
+  .hint {
+    pointer-events: auto;
+  }
+  ::selection {
+    background: var(--orange);
+    color: var(--bg);
+  }
+  .col > * {
+    margin-left: clamp(0px, 12vw, 220px);
+  }
+
+  nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 22px;
+    font-size: 14px;
+  }
+  nav a {
+    color: var(--muted);
+    text-decoration: none;
+  }
+  nav a:hover {
+    color: var(--fg);
+  }
+  nav a[aria-current="page"] {
+    color: var(--fg);
+  }
+  nav a[aria-current="page"]::before {
+    content: "■ ";
+    color: var(--orange);
+    font-size: 9px;
+    vertical-align: 2px;
+  }
+
+  .intro {
+    align-self: end;
+    max-width: 40rem;
+  }
+  .tagline {
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.8;
+    margin: 0 0 2.6em;
+  }
+  .about {
+    font-size: 16px;
+    line-height: 1.95;
+    margin: 0 0 1.5em;
+  }
+  .about p {
+    margin: 0;
+  }
+  a.u {
+    color: var(--fg);
+    text-decoration: none;
+    border-bottom: 1px solid var(--dim);
+  }
+  .greet {
+    border-bottom: 1px dashed var(--dim);
+    cursor: default;
+    transition:
+      color 0.14s,
+      border-color 0.14s;
+  }
+  .greet:hover {
+    color: var(--orange);
+    border-color: var(--orange);
+  }
+  a.u:hover {
+    color: var(--orange);
+    border-color: var(--orange);
+  }
+  a:focus-visible,
+  button:focus-visible {
+    outline: 1px dashed var(--orange);
+    outline-offset: 3px;
+  }
+  .links {
+    font-size: 16px;
+    color: var(--dim);
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .hint {
+    margin: 2.2em 0 0;
+    font-size: 12px;
+    color: var(--dim);
+    font-variant-numeric: tabular-nums;
+  }
+  .hint button {
+    font: inherit;
+    color: var(--muted);
+    background: none;
+    border: 0;
+    padding: 0;
+    border-bottom: 1px dashed var(--dim);
+    cursor: pointer;
+  }
+  .hint button:hover {
+    color: var(--orange);
+  }
+
+  /* info card for intro links; sits above the cat canvas */
+  .card {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 4;
+    width: min(330px, calc(100vw - 32px));
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    box-shadow: 0 12px 32px rgb(0 0 0 / 0.35);
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.55;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(4px);
+    transition:
+      opacity 0.14s,
+      transform 0.14s,
+      visibility 0s 0.14s;
+  }
+  .card.on {
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    transition:
+      opacity 0.14s,
+      transform 0.14s;
+  }
+  /* while a card is open, everything but its link fades to the tagline grey */
+  .about,
+  a.u {
+    transition:
+      color 0.14s,
+      border-color 0.14s;
+  }
+  body.carding .about,
+  body.carding .about a.u,
+  body.carding .links a.u,
+  body.carding .greet {
+    color: var(--muted);
+  }
+  body.carding a.u.lit,
+  body.carding .greet.lit {
+    color: var(--orange);
+    border-color: var(--orange);
+  }
+  /* mac-style title bar: traffic lights on the left (red closes), dates on the right */
+  .card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 9px 14px 9px 12px;
+    border-bottom: 1px solid var(--line);
+    font-size: 12px;
+  }
+  .card-dots {
+    display: flex;
+    gap: 7px;
+  }
+  .card-dots > * {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+  }
+  .card-x {
+    padding: 0;
+    border: 0;
+    background: #ff5f57;
+    display: grid;
+    place-items: center;
+    font: inherit;
+    font-size: 10px;
+    line-height: 1;
+    color: transparent;
+    cursor: pointer;
+  }
+  .card-dots:hover .card-x {
+    color: rgb(0 0 0 / 0.6);
+  }
+  .card-min {
+    background: #febc2e;
+  }
+  .card-max {
+    background: #28c840;
+  }
+  .card-role {
+    margin: 12px 14px 0;
+    color: var(--fg);
+    font-size: 14px;
+    font-weight: 500;
+  }
+  .card-text {
+    margin: 8px 14px 14px;
+  }
+  .card-text:empty {
+    display: none;
+  }
+  .card-open {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 14px;
+    border-top: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 12px;
+    text-decoration: none;
+  }
+  .card-open:hover {
+    color: var(--orange);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .card,
+    .card.on {
+      transform: none;
+      transition: none;
+    }
+  }
+
+  @media (max-width: 899px) {
+    .col {
+      width: auto;
+      right: 0;
+      padding-bottom: 0;
+    }
+    .col > * {
+      margin-left: 0;
+    }
+    .intro {
+      align-self: start;
+      margin-top: 4vh;
+    }
+    .tagline {
+      margin-bottom: 1.8em;
+    }
+  }
+</style>
+
+<canvas id="sky" aria-hidden="true"></canvas>
+
+<div class="col">
+  <nav aria-label="Main">
+    <a href="#" aria-current="page">rooftop</a>
+    <a href="#">projects</a>
+    <a href="#">gallery</a>
+    <a href="#">blog</a>
+  </nav>
+
+  <section class="intro">
+    <p class="tagline">every developer needs a cat.<br />this one's mine.</p>
+    <!-- links with data-role get an info card; data-period (e.g. "2024 – now") and data-text are optional -->
+    <div class="about">
+      <p>Hello, Selamat <span
+          id="greet"
+          class="greet"
+          tabindex="0"
+          data-role="Selamat malam"
+          >malam</span
+        >, I'm Farrel.</p>
+      <p>
+        IoT developer &amp; student @
+        <a
+          class="u"
+          href="#"
+          data-role="IoT Developer &amp; Student"
+          data-period="2024 – now"
+          data-text="Currently building technology for nature."
+          >Adelaide University</a
+        >
+      </p>
+      <p>currently building technology for nature</p>
+      <p>
+        actively helping students @
+        <a
+          class="u"
+          href="#"
+          data-role="Research Competition Mentor"
+          data-period="2024 – now"
+          data-text="Helping students prepare for research competitions."
+          >Thursina IIBS</a
+        >
+        for research competitions
+      </p>
+    </div>
+    <div class="links">
+      <a class="u" href="#">github</a><span>/</span>
+      <a class="u" href="#">linkedin</a><span>/</span>
+      <a class="u" href="#">instagram</a>
+    </div>
+    <p class="hint"><button type="button" id="petBtn">pet the cat</button> ·
+      jumps×<span id="jumps">0</span> · <span id="clock">--:--</span> ADL
+    </p>
+  </section>
+</div>
+
+<div class="card" id="card" role="tooltip">
+  <div class="card-head">
+    <span class="card-dots">
+      <button type="button" class="card-x" aria-label="Close">×</button>
+      <span class="card-min" aria-hidden="true"></span>
+      <span class="card-max" aria-hidden="true"></span>
+    </span>
+    <span class="card-period"></span>
+  </div>
+  <p class="card-role"></p>
+  <p class="card-text"></p>
+  <a class="card-open" href="#" target="_blank" rel="noopener"
+    >open site <span aria-hidden="true">↗</span></a
+  >
+</div>
+
+<script>
+  (() => {
+    const cv = document.getElementById("sky");
+    const ctx = cv.getContext("2d");
+    const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    // palette: [cell fill (null = glyph only), glyph colour]
+    const P = {
+      fur: ["#de7630", "#ffcf9c"],
+      fur2: ["#e88a44", "#ffdcb2"],
+      stripe: ["#b0531d", "#f2a46a"],
+      cream: ["#f3e0c2", "#fff8ec"],
+      earIn: ["#9c5640", "#dc977f"],
+      eye: ["#8cc84b", "#e2ffb4"],
+      iris2: ["#5e9431", "#b9e27a"],
+      rim: ["#22140d", "#4a2e1f"],
+      pupil: ["#17110d", "#3d3029"],
+      glint: ["#fbfbf6", "#ffffff"],
+      lid: ["#c8662a", "#ffbf86"],
+      arc: ["#6a3416", "#ffcf9c"],
+      blush: ["#f0969a", "#ffd4d6"],
+      nose: ["#b05f58", "#f0b0a8"],
+      farLeg: ["#b8601f", "#f0ac74"],
+      outline: ["#1c1e23", "#1c1e23"],
+      whisker: [null, "#e9e1d2"],
+      ridge: ["#30261f", "#856b58"],
+      tile: ["#28201c", "#5f4b40"],
+      tile2: ["#231c19", "#4e3e35"],
+      moon: ["#2b2a24", "#ddd6b8"],
+      crater: ["#25241f", "#a9a38a"],
+    };
+
+    let W,
+      H,
+      dpr,
+      cell,
+      cols,
+      rows,
+      groundRow,
+      mobile,
+      stars = [];
+    const pointer = { x: 0, y: 0, has: false, last: -1e9 };
+    const look = { x: 0, y: 0 };
+    const cat = {
+      x: 0,
+      y: 0,
+      vx: 0,
+      vy: 0,
+      dir: -1,
+      state: "sit",
+      t0: 0,
+      target: null,
+      flipT: 0,
+    };
+    let nextBlink = 2,
+      blinkStart = -9,
+      slowBlink = false,
+      twitchT = -9,
+      nextTwitch = 4,
+      jumps = 0,
+      purrT = -9;
+    const marks = [],
+      dust = [],
+      words = [];
+    let plats = [];
+    const G = 2600;
+
+    const hash = (i, j) => {
+      const s = Math.sin(i * 12.9898 + j * 78.233) * 43758.5453;
+      return s - Math.floor(s);
+    };
+    const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+    const lerp = (a, b, k) => a + (b - a) * k;
+    const ell = (x, y, cx, cy, rx, ry) =>
+      ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2;
+    function inTri(px, py, ax, ay, bx, by, cx, cy) {
+      const d1 = (px - bx) * (ay - by) - (ax - bx) * (py - by);
+      const d2 = (px - cx) * (by - cy) - (bx - cx) * (py - cy);
+      const d3 = (px - ax) * (cy - ay) - (cx - ax) * (py - ay);
+      return !((d1 < 0 || d2 < 0 || d3 < 0) && (d1 > 0 || d2 > 0 || d3 > 0));
+    }
+    function segD(px, py, ax, ay, bx, by) {
+      const vx = bx - ax,
+        vy = by - ay,
+        k = clamp(
+          ((px - ax) * vx + (py - ay) * vy) / (vx * vx + vy * vy || 1),
+          0,
+          1,
+        );
+      return Math.hypot(px - ax - vx * k, py - ay - vy * k);
+    }
+    function tailD(px, py, f) {
+      let best = 9,
+        bs = 0;
+      for (let k = 0; k <= 18; k++) {
+        const s = k / 18,
+          p = f(s),
+          d = Math.hypot(px - p[0], py - p[1]);
+        if (d < best) {
+          best = d;
+          bs = s;
+        }
+      }
+      return [best, bs];
+    }
+
+    function resize() {
+      dpr = Math.min(2, window.devicePixelRatio || 1);
+      W = innerWidth;
+      H = innerHeight;
+      mobile = W < 900;
+      cell = W < 520 ? 9 : mobile ? 10 : 12;
+      cols = Math.ceil(W / cell);
+      rows = Math.ceil(H / cell);
+      groundRow = rows - (mobile ? 4 : 5);
+      cv.width = W * dpr;
+      cv.height = H * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.font = `${Math.round(cell * 0.78)}px "Geist Mono", ui-monospace, monospace`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      stars = [];
+      const n = Math.round(cols * groundRow * 0.008);
+      for (let k = 0; k < n; k++) {
+        const r = Math.random();
+        stars.push({
+          i: Math.floor(Math.random() * cols),
+          j: Math.floor(Math.random() * (groundRow - 2)),
+          ch: r < 0.7 ? "." : r < 0.93 ? "+" : "*",
+          ph: Math.random() * 6.28,
+          sp: 0.6 + Math.random() * 1.8,
+        });
+      }
+      if (!cat.x) cat.x = W * (mobile ? 0.62 : 0.72);
+      cat.x = clamp(cat.x, 14 * cell, W - 14 * cell);
+    }
+
+    // text lines the cat can stand on (desktop + tablet)
+    function getPlatforms() {
+      plats = [];
+      if (W < 600) return;
+      document
+        .querySelectorAll(".tagline, .about p, .links, .hint")
+        .forEach((el) => {
+          const r = document.createRange();
+          r.selectNodeContents(el);
+          for (const b of r.getClientRects()) {
+            if (b.width < 4) continue;
+            const p = plats.find(
+              (q) =>
+                Math.abs(q.top - b.top) < 4 &&
+                b.left <= q.x2 + 30 &&
+                b.right >= q.x1 - 30,
+            );
+            if (p) {
+              p.x1 = Math.min(p.x1, b.left);
+              p.x2 = Math.max(p.x2, b.right);
+              p.bottom = Math.max(p.bottom, b.bottom);
+            } else
+              plats.push({
+                x1: b.left,
+                x2: b.right,
+                top: b.top,
+                bottom: b.bottom,
+              });
+          }
+        });
+      plats = plats.filter((p) => p.top > 23 * cell);
+    }
+    function pickPlat(tx, ty) {
+      let best = null,
+        bd = 1e9;
+      for (const p of plats) {
+        if (
+          tx < p.x1 - 12 ||
+          tx > p.x2 + 12 ||
+          ty < p.top - 80 ||
+          ty > p.bottom + 6
+        )
+          continue;
+        const d = Math.abs(ty - p.top);
+        if (d < bd) {
+          bd = d;
+          best = p;
+        }
+      }
+      return best;
+    }
+
+    // ---- the cat, sampled one cell at a time; local coords face right, y = 0 is the roof line ----
+    let S = {};
+    // eyes: almond shape on whole cells, dark upper rim heavier at the outer corner, slit pupil
+    function eyeCell(dx, dy, outer, lidAmt, happy) {
+      const o = dx * outer;
+      const inside =
+        (dy === 0 && Math.abs(dx) <= 2) ||
+        (Math.abs(dy) === 1 && Math.abs(dx) <= 1);
+      const rim = (dy === -2 && o >= -1 && o <= 2) || (dy === -1 && o === 2);
+      if (happy) {
+        if (
+          (dy === -1 && Math.abs(dx) <= 1) ||
+          (dy === 0 && Math.abs(dx) === 2)
+        )
+          return [P.arc, "^"];
+        return inside || rim || (dy === -1 && o === -2) ? [P.fur, "^"] : null;
+      }
+      if (rim) return null;
+      if (!inside) return null;
+      const covered = Math.min(2, Math.ceil(lidAmt * 3 - 1e-6));
+      if (dy + 1 < covered) return [P.lid, "-"];
+      const first = -1 + Math.max(0, covered);
+      const pdx = clamp(Math.round(S.look.x * 1.3), -1, 1);
+      if (dx === pdx) return [P.pupil, "|"];
+      if (dy === first && dx === pdx + (pdx < 1 ? 1 : -1))
+        return [P.glint, "·"];
+      return dy <= first ? [P.iris2, ":"] : [P.eye, "."];
+    }
+
+    // sitting: chibi proportions, big round head, small loaf body
+    function sitCell(x, y) {
+      for (const [ex, outer] of [
+        [-0.5, -1],
+        [5.5, 1],
+      ]) {
+        const r = eyeCell(
+          Math.round(x - ex),
+          Math.round(y + 12.5),
+          outer,
+          Math.max(S.lid, S.chill),
+          S.happy,
+        );
+        if (r) return r;
+      }
+      if (Math.abs(x - 2.5) < 0.6 && Math.abs(y + 10.5) < 0.55)
+        return [P.nose, "v"];
+      if (y > -9.9 && y < -8.9 && Math.abs(x - 2.5) < 1.2)
+        return [P.cream, "w"];
+      if (ell(x, y, 2.5, -9.6, 2.6, 1.5) < 1) return [P.cream, '"'];
+      const tw = S.twitch;
+      const notch = ell(x, y, 8.6, -19.2, 1.1, 1.0) < 1;
+      if (inTri(x, y, -3.2, -15.6, 0.0, -17.3, -2.6, -19.6))
+        return [P.earIn, "^"];
+      if (inTri(x, y, -4.6, -14.2, 1.6, -17.6, -3.2, -21.2))
+        return [P.fur, "/"];
+      if (!notch && inTri(x, y, 8.2, -15.6, 5.0, -17.3, 7.6 + tw, -19.6))
+        return [P.earIn, "^"];
+      if (!notch && inTri(x, y, 9.6, -14.2, 3.4, -17.6, 8.2 + tw * 1.4, -21.2))
+        return [P.fur, "\\"];
+      if (ell(x, y, 2.5, -12.4, 6.9, 5.3) < 1) {
+        if (y < -15.6 && Math.abs(x - 2.5) < 2 && Math.floor(x + 60) % 2 === 0)
+          return [P.stripe, "|"];
+        if (Math.abs(x - 2.5) > 5.4 && y > -12.4) return [P.fur2, '"'];
+        return [
+          hash(Math.floor(x + 99), Math.floor(y + 99)) > 0.82 ? P.fur2 : P.fur,
+          "^",
+        ];
+      }
+      if (
+        (Math.abs(y + 10.2) < 0.5 || Math.abs(y + 9.2) < 0.5) &&
+        ((x > -6.8 && x < -4.6) || (x > 9.6 && x < 11.8))
+      )
+        return [P.whisker, "-"];
+      for (const px of [0.9, 4.1])
+        if (ell(x, y, px, -0.55, 1.3, 0.75) < 1) return [P.cream, "m"];
+      if (ell(x, y, 2.5, -4.2, 2.5, 2.7) < 1) return [P.cream, '"'];
+      if (ell(x, y, -2.8, -0.55, 1.5, 0.72) < 1) return [P.cream, "m"];
+      if (
+        ell(x, y, -1.8, -2.4, 3.0, 2.4) < 1 ||
+        ell(x, y, 1.5, -3.6, 4.8, 3.9) < 1
+      ) {
+        if ((((x * 0.7 - y * 0.25) % 2.2) + 2.2) % 2.2 < 0.7)
+          return [P.stripe, ")"];
+        return [P.fur, "~"];
+      }
+      const [d, s] = tailD(x, y, (s) => [
+        -4.4 - 4.4 * s + Math.sin(S.t * 2.1 + s * 2.4) * 1.2 * s * S.tailSwish,
+        -1.0 - 7 * s * s * (0.8 + 0.2 * Math.sin(S.t * 1.7)),
+      ]);
+      if (d < 1.4 - s * 0.35)
+        return Math.floor(s * 6) % 2 ? [P.stripe, "s"] : [P.fur, "s"];
+      return null;
+    }
+
+    // crouching / leaping: same big head carried in front of a stretched body
+    function leapCell(x0, y0) {
+      // the head stays level while the body pitches, so the face never gets sheared on the grid
+      const p = S.pitch,
+        yl = y0 - S.dy;
+      const hcx = 7 * Math.cos(p) + 2.4 * Math.sin(p),
+        hcy = 7 * Math.sin(p) - 2.4 * Math.cos(p) - 5;
+      const hx = x0 - (hcx - 7),
+        hy = yl - (hcy + 7.4);
+      for (const [ex, outer] of [
+        [4.4, -1],
+        [9.6, 1],
+      ]) {
+        const r = eyeCell(
+          Math.round(hx - ex),
+          Math.round(hy + 7.5),
+          outer,
+          0,
+          false,
+        );
+        if (r) return r;
+      }
+      if (ell(hx, hy, 7.1, -4.7, 0.75, 0.65) < 1) return [P.nose, "o"];
+      if (ell(hx, hy, 7.0, -5.3, 2.3, 1.35) < 1) return [P.cream, '"'];
+      if (inTri(hx, hy, 3.9, -10.8, 5.6, -11.6, 4.0, -13.2))
+        return [P.earIn, "^"];
+      if (inTri(hx, hy, 2.4, -9.6, 6.6, -11.9, 3.0, -14.6)) return [P.fur, "/"];
+      if (inTri(hx, hy, 8.5, -11.6, 10.2, -10.8, 10.1, -13.2))
+        return [P.earIn, "^"];
+      if (inTri(hx, hy, 7.4, -11.9, 11.6, -9.6, 11.0, -14.6))
+        return [P.fur, "\\"];
+      if (ell(hx, hy, 7, -7.4, 5.3, 4.3) < 1) return [P.fur, "^"];
+      if (
+        hx > 12.4 &&
+        hx < 14.4 &&
+        (Math.abs(hy + 6.2) < 0.5 || Math.abs(hy + 5.2) < 0.5)
+      )
+        return [P.whisker, "-"];
+      let x = x0 + (x0 < -2 ? S.wiggle : 0),
+        y = yl;
+      const c = Math.cos(-p),
+        sn = Math.sin(-p),
+        rx = x,
+        ry = y + 5;
+      x = rx * c - ry * sn;
+      y = rx * sn + ry * c - 5;
+      const e = S.e;
+      const legs =
+        S.pose === "leap"
+          ? [
+              [3.0, -3.4, lerp(4.4, 8.2, e), lerp(-1.4, -2.2, e)],
+              [-5.0, -3.6, lerp(-5.6, -9.8, e), lerp(-1.4, -2.6, e)],
+            ]
+          : [
+              [3.0, -3.2, 4.6, -1.0],
+              [-4.8, -3.2, -5.4, -1.0],
+            ];
+      for (const L of legs) {
+        if (Math.hypot(x - L[2], y - L[3]) < 0.95) return [P.cream, "m"];
+        if (segD(x, y, L[0], L[1], L[2], L[3]) < 0.85)
+          return [P.fur, L[2] > 0 ? "/" : "\\"];
+      }
+      if (ell(x, y, -1, -4.6, 6.4, 2.9) < 1) {
+        if (y > -3.3) return [P.cream, '"'];
+        if ((x + 100) % 2.4 < 0.8) return [P.stripe, "|"];
+        return [P.fur, "~"];
+      }
+      for (const L of legs) {
+        if (segD(x, y, L[0] + 0.9, L[1], L[2] + 0.9, L[3] - 0.3) < 0.75)
+          return [P.farLeg, L[2] > 0 ? "/" : "\\"];
+      }
+      const [d, s] = tailD(x, y, (s) => [
+        -7 - 6.2 * s,
+        -5.2 - 1.8 * s * S.tailLift + Math.sin(S.t * 9 + s * 4) * 0.6 * s,
+      ]);
+      if (d < 1.2 - s * 0.3)
+        return Math.floor(s * 6) % 2 ? [P.stripe, "s"] : [P.fur, "s"];
+      return null;
+    }
+
+    function catAt(i, j) {
+      const sit = S.pose === "sit";
+      const cx = sit ? Math.round(cat.x / cell) : cat.x / cell,
+        cy = sit ? Math.round(cat.y / cell) : cat.y / cell;
+      const lx = (i + 0.5 - cx) * cat.dir,
+        ly = j + 0.5 - groundRow - cy;
+      return S.pose === "sit" ? sitCell(lx, ly) : leapCell(lx, ly);
+    }
+
+    function cellRect(i, j, pal, ch) {
+      const x = i * cell,
+        y = j * cell;
+      if (pal[0]) {
+        ctx.fillStyle = pal[0];
+        ctx.fillRect(x + 0.5, y + 0.5, cell - 1, cell - 1);
+      }
+      ctx.fillStyle = pal[1];
+      ctx.fillText(ch, x + cell / 2, y + cell / 2 + 1);
+    }
+
+    function drawScene(t) {
+      ctx.fillStyle = "#a49e94";
+      for (const st of stars) {
+        ctx.globalAlpha = reduce
+          ? 0.3
+          : 0.1 + 0.34 * (0.5 + 0.5 * Math.sin(t * st.sp + st.ph));
+        ctx.fillText(st.ch, st.i * cell + cell / 2, st.j * cell + cell / 2);
+      }
+      ctx.globalAlpha = 1;
+      // moon, top right
+      const mx = cols - (mobile ? 7 : 16),
+        my = mobile ? Math.round(rows * 0.56) : 9,
+        mr = mobile ? 3.6 : 4.8;
+      for (let j = Math.floor(my - mr); j <= my + mr; j++)
+        for (let i = Math.floor(mx - mr); i <= mx + mr; i++) {
+          if (ell(i + 0.5, j + 0.5, mx, my, mr, mr) < 1) {
+            const cr =
+              ell(i + 0.5, j + 0.5, mx - 1.4, my - 1, 1.2, 1.2) < 1 ||
+              ell(i + 0.5, j + 0.5, mx + 1.6, my + 1.5, 0.9, 0.9) < 1;
+            cellRect(i, j, cr ? P.crater : P.moon, cr ? "o" : ".");
+          }
+        }
+      // rooftop: ridge line, then rows of tiles
+      for (let i = 0; i < cols; i++) cellRect(i, groundRow, P.ridge, "_");
+      for (let j = groundRow + 1; j < rows; j++) {
+        const off = (j - groundRow) % 2;
+        for (let i = 0; i < cols; i++) {
+          const k = (i + off) % 2;
+          cellRect(i, j, hash(i, j) > 0.85 ? P.tile2 : P.tile, k ? ")" : "(");
+        }
+      }
+    }
+
+    function jumpTo(tx, ty) {
+      if (cat.state !== "sit") return;
+      const gy = groundRow * cell,
+        margin = 14 * cell;
+      let land = {
+        x: clamp(tx + (tx - cat.x) * 0.25, margin, W - margin),
+        y: 0,
+      };
+      const p = pickPlat(tx, ty);
+      if (p) {
+        const pad = 3 * cell;
+        land = {
+          x:
+            p.x2 - p.x1 > 2 * pad
+              ? clamp(tx, p.x1 + pad, p.x2 - pad)
+              : (p.x1 + p.x2) / 2,
+          y: p.top - gy,
+          plat: true,
+        };
+      }
+      const d = land.x - cat.x;
+      if (Math.abs(d) > 20) cat.dir = d > 0 ? 1 : -1;
+      cat.target = { x: tx, y: ty, land };
+      cat.state = "crouch";
+      cat.t0 = performance.now() / 1000;
+      marks.push({ x: tx, y: ty, t0: cat.t0 });
+    }
+
+    function launch(t) {
+      const gy = groundRow * cell,
+        land = cat.target.land;
+      const y0 = cat.y,
+        y1 = land.y,
+        cy = clamp(cat.target.y - gy, -gy, 0);
+      let apexY = Math.min(
+        Math.min(y0, y1, cy) - (land.plat ? 45 : 20),
+        Math.min(y0, y1) - 60,
+      );
+      apexY = Math.max(apexY, -(gy - 23 * cell));
+      const tUp = Math.sqrt((2 * Math.max(1, y0 - apexY)) / G),
+        tDown = Math.sqrt((2 * Math.max(1, y1 - apexY)) / G);
+      cat.vy = -G * tUp;
+      cat.vx = (land.x - cat.x) / (tUp + tDown);
+      cat.vy0 = cat.vy;
+      cat.landX = land.x;
+      cat.landY = y1;
+      if (Math.abs(cat.vx) > 1) cat.dir = cat.vx > 0 ? 1 : -1;
+      cat.state = "leap";
+      cat.t0 = t;
+      jumps++;
+      document.getElementById("jumps").textContent = jumps;
+    }
+
+    function purr() {
+      purrT = performance.now() / 1000;
+      slowBlink = true;
+      blinkStart = purrT;
+      const hx = cat.x / cell + cat.dir * 2.5,
+        hy = groundRow - 22 + cat.y / cell;
+      words.push({
+        x: hx - 1,
+        y: hy - 1,
+        t0: purrT,
+        text: Math.random() < 0.7 ? "prr" : "mrrp",
+      });
+    }
+
+    let lastT = performance.now() / 1000;
+    function frame(nowMs) {
+      const t = nowMs / 1000,
+        dt = Math.min(0.04, t - lastT);
+      lastT = t;
+
+      // state machine: sit → crouch (butt wiggle) → leap → land → sit
+      let wiggle = 0,
+        dy = 0;
+      if (cat.state === "crouch") {
+        dy = 0.9;
+        wiggle = Math.sin((t - cat.t0) * 40) * 0.6;
+        if (t - cat.t0 > (reduce ? 0.1 : 0.38)) launch(t);
+      } else if (cat.state === "leap") {
+        if (reduce) {
+          cat.x = cat.landX;
+          cat.y = cat.landY;
+          cat.state = "land";
+          cat.t0 = t;
+        } else {
+          cat.vy += G * dt;
+          cat.x += cat.vx * dt;
+          cat.y += cat.vy * dt;
+          if (cat.y >= cat.landY && cat.vy > 0) {
+            cat.y = cat.landY;
+            cat.x = cat.landX;
+            cat.state = "land";
+            cat.t0 = t;
+            const row = Math.floor(groundRow + cat.y / cell);
+            for (let k = 0; k < 8; k++)
+              dust.push({
+                x: cat.x,
+                row,
+                vx: (Math.random() - 0.5) * 220,
+                t0: t,
+              });
+          }
+        }
+      } else if (cat.state === "land") {
+        dy = 0.9;
+        if (t - cat.t0 > 0.2) cat.state = "sit";
+      }
+
+      // gaze + turning to face you
+      const idle = !pointer.has || t - pointer.last > 8;
+      const headX = cat.x + cat.dir * 3.5 * cell,
+        headY = (groundRow - 12) * cell + cat.y;
+      let gx = 0,
+        gy = 0;
+      if (pointer.has) {
+        gx = pointer.x - headX;
+        gy = pointer.y - headY;
+        const dist = Math.hypot(gx, gy) || 1,
+          k = Math.min(1, dist / 240);
+        gx = (gx / dist) * k * cat.dir;
+        gy = (gy / dist) * k;
+      }
+      look.x += (gx - look.x) * Math.min(1, dt * 10);
+      look.y += (gy - look.y) * Math.min(1, dt * 10);
+      if (
+        cat.state === "sit" &&
+        pointer.has &&
+        !idle &&
+        (pointer.x - cat.x) * cat.dir < -6 * cell
+      ) {
+        if (!cat.flipT) cat.flipT = t;
+        if (t - cat.flipT > 0.5) {
+          cat.dir *= -1;
+          cat.flipT = 0;
+        }
+      } else cat.flipT = 0;
+
+      // blinks: quick ones, plus a slow "cat kiss" blink after a pet
+      if (!reduce && t > nextBlink) {
+        blinkStart = t;
+        slowBlink = Math.random() < 0.18;
+        nextBlink = t + 3 + Math.random() * 4;
+      }
+      const bd = slowBlink ? 0.9 : 0.16,
+        bp = (t - blinkStart) / bd;
+      let lid = bp >= 0 && bp < 1 ? Math.sin(bp * Math.PI) : 0;
+      if (idle && pointer.has) lid = Math.max(lid, 0.55);
+      if (!reduce && t > nextTwitch) {
+        twitchT = t;
+        nextTwitch = t + 3 + Math.random() * 6;
+      }
+      const tp = (t - twitchT) / 0.25;
+
+      let pitch = 0,
+        e = 1;
+      if (cat.state === "leap" && cat.vy0) {
+        pitch = clamp(
+          Math.atan2(cat.vy, Math.abs(cat.vx) + 400) * 0.45,
+          -0.32,
+          0.38,
+        );
+        e = 0.55 + 0.45 * Math.abs(cat.vy / cat.vy0);
+      }
+      S = {
+        t,
+        look,
+        lid,
+        pitch,
+        e,
+        dy,
+        wiggle,
+        happy: t - purrT < 1.6,
+        chill: 0.28,
+        pose:
+          cat.state === "sit"
+            ? "sit"
+            : cat.state === "leap"
+              ? "leap"
+              : "crouch",
+        twitch: tp >= 0 && tp < 1 ? Math.sin(tp * Math.PI) * 0.9 : 0,
+        tailSwish: reduce ? 0 : t - purrT < 2 ? 0.3 : 1,
+        tailLift: cat.state === "crouch" ? 2.5 : 1,
+      };
+      if (reduce) S.t = 0;
+
+      ctx.clearRect(0, 0, W, H);
+      drawScene(t);
+
+      // click markers
+      for (let k = marks.length - 1; k >= 0; k--) {
+        const m = marks[k],
+          age = t - m.t0;
+        if (age > 0.7) {
+          marks.splice(k, 1);
+          continue;
+        }
+        const i = Math.floor(m.x / cell),
+          j = Math.floor(m.y / cell),
+          r = Math.round(age * 4);
+        ctx.globalAlpha = 1 - age / 0.7;
+        ctx.fillStyle = "#e98a3c";
+        ctx.fillText("+", i * cell + cell / 2, j * cell + cell / 2);
+        if (r)
+          for (const [a, b] of [
+            [-r, 0],
+            [r, 0],
+            [0, -r],
+            [0, r],
+          ])
+            ctx.fillText(
+              "·",
+              (i + a) * cell + cell / 2,
+              (j + b) * cell + cell / 2,
+            );
+        ctx.globalAlpha = 1;
+      }
+
+      // the cat
+      const ci = Math.floor(cat.x / cell),
+        cj = Math.floor(groundRow + cat.y / cell);
+      const i0 = ci - 22,
+        j0 = cj - 24,
+        bw = 45,
+        bh = 26,
+        buf = new Array(bw * bh);
+      for (let j = 0; j < bh; j++)
+        for (let i = 0; i < bw; i++) buf[j * bw + i] = catAt(i0 + i, j0 + j);
+      const solid = (i, j) =>
+        i >= 0 &&
+        j >= 0 &&
+        i < bw &&
+        j < bh &&
+        buf[j * bw + i] &&
+        buf[j * bw + i][0];
+      for (let j = 0; j < bh; j++)
+        for (let i = 0; i < bw; i++) {
+          const r = buf[j * bw + i];
+          if (r) {
+            cellRect(i0 + i, j0 + j, r[0], r[1]);
+            continue;
+          }
+          // sticker outline around the silhouette, never below the feet
+          if (j0 + j + 0.5 - groundRow - cat.y / cell > 0) continue;
+          if (
+            solid(i - 1, j) ||
+            solid(i + 1, j) ||
+            solid(i, j - 1) ||
+            solid(i, j + 1)
+          )
+            cellRect(i0 + i, j0 + j, P.outline, "");
+        }
+
+      // landing dust
+      for (let k = dust.length - 1; k >= 0; k--) {
+        const p = dust[k],
+          age = t - p.t0;
+        if (age > 0.5) {
+          dust.splice(k, 1);
+          continue;
+        }
+        ctx.globalAlpha = 1 - age / 0.5;
+        ctx.fillStyle = "#9b8f83";
+        const i = Math.floor((p.x + p.vx * age) / cell),
+          j = p.row - 1 - (age < 0.2 ? 0 : 1);
+        ctx.fillText(
+          age < 0.25 ? "." : ",",
+          i * cell + cell / 2,
+          j * cell + cell / 2,
+        );
+        ctx.globalAlpha = 1;
+      }
+      for (let p = words.length - 1; p >= 0; p--) {
+        const q = words[p],
+          age = t - q.t0;
+        if (age > 1.8) {
+          words.splice(p, 1);
+          continue;
+        }
+        if (age < 0) continue;
+        ctx.globalAlpha = 1 - age / 1.8;
+        ctx.fillStyle = q.color || "#e98a3c";
+        const j = Math.round(q.y - age * 4);
+        for (let c = 0; c < q.text.length; c++)
+          ctx.fillText(
+            q.text[c],
+            (Math.round(q.x) + c) * cell + cell / 2,
+            j * cell + cell / 2,
+          );
+        ctx.globalAlpha = 1;
+      }
+
+      requestAnimationFrame(frame);
+    }
+
+    function setPointer(e) {
+      pointer.x = e.clientX;
+      pointer.y = e.clientY;
+      pointer.has = true;
+      pointer.last = performance.now() / 1000;
+    }
+    addEventListener("pointermove", setPointer, { passive: true });
+    function poke(x, y) {
+      const hit =
+        cat.state === "sit" && catAt(Math.floor(x / cell), Math.floor(y / cell));
+      if (hit) purr();
+      else jumpTo(x, y);
+    }
+    // on text, wait for the release so dragging / double-clicking to select doesn't send the cat
+    let press = null,
+      pendingJump = 0;
+    addEventListener("pointerdown", (e) => {
+      setPointer(e);
+      clearTimeout(pendingJump);
+      if (e.target.closest("a, button, .card, [data-role]")) return;
+      if (e.target.closest(".tagline, .about, .links, .hint"))
+        press = { x: e.clientX, y: e.clientY };
+      else poke(e.clientX, e.clientY);
+    });
+    addEventListener("pointerup", (e) => {
+      if (!press) return;
+      const p = press;
+      press = null;
+      if (Math.hypot(e.clientX - p.x, e.clientY - p.y) > 4) return;
+      pendingJump = setTimeout(() => {
+        if (!String(getSelection())) poke(p.x, p.y);
+      }, 260);
+    });
+    addEventListener("pointercancel", () => (press = null));
+
+    // info cards: hover with a mouse, first tap on touch (a second tap follows the link)
+    const card = document.getElementById("card");
+    const canHover = matchMedia("(hover: hover)");
+    let cardFor = null,
+      hideT = 0;
+    const slot = (name) => card.querySelector(".card-" + name);
+    function showCard(a) {
+      clearTimeout(hideT);
+      const d = a.dataset;
+      slot("period").textContent = d.period || "";
+      slot("role").textContent = d.role || "";
+      slot("text").textContent = d.text || "";
+      // the greeting has no site to open
+      slot("open").style.display = a.href ? "" : "none";
+      slot("open").href = a.href || "#";
+      if (cardFor) cardFor.classList.remove("lit");
+      a.classList.add("lit");
+      document.body.classList.add("carding");
+      cardFor = a;
+      const r = a.getBoundingClientRect(),
+        cw = card.offsetWidth,
+        ch = card.offsetHeight;
+      card.style.left = clamp(r.left - 16, 16, innerWidth - cw - 16) + "px";
+      card.style.top =
+        (r.top - ch - 10 >= 16 ? r.top - ch - 10 : r.bottom + 10) + "px";
+      card.classList.add("on");
+    }
+    function hideCard(delay = 0) {
+      clearTimeout(hideT);
+      hideT = setTimeout(() => {
+        card.classList.remove("on");
+        document.body.classList.remove("carding");
+        if (cardFor) cardFor.classList.remove("lit");
+        cardFor = null;
+      }, delay);
+    }
+    document.querySelectorAll("[data-role]").forEach((a) => {
+      a.addEventListener("pointerenter", (e) => {
+        if (e.pointerType === "mouse") showCard(a);
+      });
+      a.addEventListener("pointerleave", (e) => {
+        if (e.pointerType === "mouse") hideCard(150);
+      });
+      a.addEventListener("focus", () => {
+        if (a.matches(":focus-visible")) showCard(a);
+      });
+      a.addEventListener("blur", () => hideCard(150));
+      a.addEventListener("click", (e) => {
+        if (!canHover.matches && cardFor !== a) {
+          e.preventDefault();
+          showCard(a);
+        }
+      });
+    });
+    card.addEventListener("pointerenter", () => clearTimeout(hideT));
+    card.addEventListener("pointerleave", (e) => {
+      if (e.pointerType === "mouse") hideCard(150);
+    });
+    card.addEventListener("focusin", () => clearTimeout(hideT));
+    card.addEventListener("focusout", () => hideCard(150));
+    addEventListener("pointerdown", (e) => {
+      if (cardFor && !e.target.closest(".card, [data-role]")) hideCard();
+    });
+    slot("x").addEventListener("click", () => hideCard());
+    addEventListener("keydown", (e) => {
+      if (e.key === "Escape") hideCard();
+    });
+    addEventListener("resize", () => hideCard());
+    document.getElementById("petBtn").addEventListener("click", purr);
+    let rt;
+    addEventListener("resize", () => {
+      clearTimeout(rt);
+      rt = setTimeout(() => {
+        resize();
+        getPlatforms();
+        if (cat.y) {
+          cat.y = 0;
+          cat.state = "sit";
+        }
+      }, 80);
+    });
+
+    const tick = () => {
+      try {
+        document.getElementById("clock").textContent = new Intl.DateTimeFormat(
+          "en-GB",
+          {
+            timeZone: "Australia/Adelaide",
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+          },
+        ).format(new Date());
+      } catch (e) {
+        /* decorative */
+      }
+    };
+    // greeting follows the visitor's own clock: pagi 04-10, siang 11-14, sore 15-17, malam 18-03
+    const GREETS = {
+      pagi: ["Good morning", "04:00 – 10:59"],
+      siang: ["Good day", "11:00 – 14:59"],
+      sore: ["Good afternoon", "15:00 – 17:59"],
+      malam: ["Good night", "18:00 – 03:59"],
+    };
+    const greet = () => {
+      const h = new Date().getHours();
+      const word =
+        h >= 4 && h < 11
+          ? "pagi"
+          : h < 15 && h >= 11
+            ? "siang"
+            : h < 18 && h >= 15
+              ? "sore"
+              : "malam";
+      const el = document.getElementById("greet"),
+        [meaning, hours] = GREETS[word];
+      el.textContent = word;
+      el.dataset.role = "Selamat " + word;
+      el.dataset.text = `means "${meaning}" in Indonesian. Picked from your local time.`;
+      el.dataset.period = hours;
+    };
+    greet();
+    setInterval(greet, 60000);
+    tick();
+    setInterval(tick, 20000);
+    const start = () => {
+      resize();
+      getPlatforms();
+      requestAnimationFrame(frame);
+    };
+    if (document.fonts && document.fonts.load)
+      document.fonts.load('12px "Geist Mono"').then(start, start);
+    else start();
+  })();
+</script>

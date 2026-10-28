@@ -1,0 +1,1330 @@
+@import "tailwindcss";
+
+/* Layout: one quiet nav line top-left, intro on the left; a character-grid rooftop runs along the bottom where the cat lives */
+:root {
+  --bg: #1c1e23;
+  --fg: #e3ddd4;
+  --muted: #8a847c;
+  --dim: #514c47;
+  --orange: #e98a3c;
+  --card: #25272d;
+  --line: rgb(255 255 255 / 0.08);
+  /* canvas grid, kept in step with fitCanvas in components/cat/scene.js: cell size and roof rows by width */
+  --cell: 12px;
+  --roof: 5;
+  /* header offset, and where page content may start below it */
+  --nav-pad: calc(env(safe-area-inset-top, 0px) + 26px);
+  --head: calc(env(safe-area-inset-top, 0px) + 80px);
+  color-scheme: dark;
+}
+@media (max-width: 899px) {
+  :root {
+    --cell: 10px;
+    --roof: 4;
+  }
+}
+@media (max-width: 519px) {
+  :root {
+    --cell: 9px;
+  }
+}
+/* .stage is the page-transition wrapper; full height so fixed children keep the viewport as their box while it's blurred */
+html,
+body,
+#__next,
+.app,
+.stage {
+  height: 100%;
+}
+body {
+  background: var(--bg);
+  color: var(--fg);
+  overflow: hidden;
+}
+/* first load and reload: page and header blur in, like a page transition's way in. it runs from
+   the first paint, before React has hydrated, and the elements persist so it never replays.
+   "backwards" only: nothing lingers on .stage afterwards for motion's transitions to fight with */
+.stage,
+.site-nav {
+  animation: arrive 1.6s cubic-bezier(0.22, 1, 0.36, 1) 0.05s backwards;
+}
+@keyframes arrive {
+  from {
+    opacity: 0;
+    filter: blur(8px);
+  }
+}
+@keyframes arrive-plain {
+  from {
+    opacity: 0;
+  }
+}
+/* ...and the intro below the tagline rises in line by line while it does. these live in the page,
+   which remounts on every visit, so .navigated (set on the first route change) keeps them to a load */
+.about p,
+.links,
+.hint {
+  animation: rise 0.9s cubic-bezier(0.22, 1, 0.36, 1)
+    calc(0.45s + var(--i, 0) * 0.09s) backwards;
+}
+.about p:nth-child(2) {
+  --i: 1;
+}
+.about p:nth-child(3) {
+  --i: 2;
+}
+.about p:nth-child(4) {
+  --i: 3;
+}
+.links {
+  --i: 4;
+}
+.hint {
+  --i: 5;
+}
+.navigated .about p,
+.navigated .links,
+.navigated .hint {
+  animation: none;
+}
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+/* the next/font class in _app defines --font-geist-mono on .app, so the font stack has to live here too */
+.app {
+  --mono:
+    var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Consolas,
+    monospace;
+  font-family: var(--mono);
+}
+canvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.col {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 2;
+  width: min(900px, 62vw);
+  display: grid;
+  grid-template-rows: 1fr;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  /* top padding clears the fixed header */
+  padding-top: var(--head);
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 26vh);
+  /* on screens too short for the intro it scrolls here instead of running under the header */
+  overflow-y: auto;
+  scrollbar-width: none;
+  pointer-events: none;
+}
+.col a,
+.col button,
+.tagline,
+.about,
+.links,
+.hint {
+  pointer-events: auto;
+}
+::selection {
+  background: var(--orange);
+  color: var(--bg);
+}
+.col > * {
+  margin-left: clamp(0px, 12vw, 220px);
+}
+
+/* header is rendered by _app, outside the page transition, so it never blurs */
+.site-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-top: var(--nav-pad);
+  pointer-events: none;
+}
+nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 22px;
+  width: fit-content;
+  /* centred over the page */
+  margin-inline: auto;
+  font-size: 14px;
+  pointer-events: auto;
+}
+nav a {
+  position: relative;
+  color: var(--muted);
+  text-decoration: none;
+  /* roughly the square's spring time, so the grey/white swap moves with it */
+  transition: color 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+nav a:hover,
+nav a.on {
+  color: var(--fg);
+}
+/* phone-only parts of the header (see the phone header block at the end) */
+.bar {
+  display: none;
+}
+.menu {
+  display: contents;
+}
+/* the orange square; sits in the gap left of the active link and springs between links */
+.nav-dot {
+  position: absolute;
+  left: -14px;
+  top: 50%;
+  translate: 0 -50%;
+  color: var(--orange);
+  font-size: 9px;
+  line-height: 1;
+}
+
+.intro {
+  /* "safe": if it doesn't fit, start at the top and scroll rather than overflow upwards */
+  align-self: safe end;
+  max-width: 40rem;
+}
+.tagline {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.8;
+  margin: 0 0 2.6em;
+}
+/* typewriter (components/typewriter.js): the rest of the line is laid out but see-through */
+.untyped {
+  color: transparent;
+}
+/* white block caret, terminal style: zero width so it sits over the next character's cell
+   without pushing the line; solid while typing, blinking once it's done */
+.caret {
+  position: relative;
+  display: inline-block;
+  width: 0;
+  height: 1.2em;
+  vertical-align: -0.25em;
+}
+.caret::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 1ch;
+  background: var(--fg);
+}
+.caret.idle::after {
+  animation: caret-blink 1.06s steps(1) infinite;
+}
+@keyframes caret-blink {
+  50% {
+    opacity: 0;
+  }
+}
+.about {
+  font-size: 16px;
+  line-height: 1.95;
+  margin: 0 0 1.5em;
+}
+.about p {
+  margin: 0;
+}
+a.u {
+  color: var(--fg);
+  text-decoration: none;
+  border-bottom: 1px solid var(--dim);
+}
+.greet {
+  border-bottom: 1px dashed var(--dim);
+  cursor: default;
+  transition:
+    color 0.14s,
+    border-color 0.14s;
+}
+.greet:hover {
+  color: var(--orange);
+  border-color: var(--orange);
+}
+a.u:hover {
+  color: var(--orange);
+  border-color: var(--orange);
+}
+a:focus-visible,
+button:focus-visible {
+  outline: 1px dashed var(--orange);
+  outline-offset: 3px;
+}
+.links {
+  font-size: 16px;
+  color: var(--dim);
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.hint {
+  margin: 2.2em 0 0;
+  font-size: 12px;
+  color: var(--dim);
+  font-variant-numeric: tabular-nums;
+}
+.hint button {
+  font: inherit;
+  color: var(--muted);
+  background: none;
+  border: 0;
+  padding: 0;
+  border-bottom: 1px dashed var(--dim);
+  cursor: pointer;
+}
+.hint button:hover {
+  color: var(--orange);
+}
+
+/* info card for intro links; sits above the cat canvas */
+.card {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 4;
+  width: min(330px, calc(100vw - 32px));
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 12px 32px rgb(0 0 0 / 0.35);
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(4px);
+  transition:
+    opacity 0.14s,
+    transform 0.14s,
+    visibility 0s 0.14s;
+}
+.card.on {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition:
+    opacity 0.14s,
+    transform 0.14s;
+}
+/* while a card is open, everything but its link fades to the tagline grey */
+.about,
+a.u {
+  transition:
+    color 0.14s,
+    border-color 0.14s;
+}
+body.carding .about,
+body.carding .about a.u,
+body.carding .links a.u,
+body.carding .greet {
+  color: var(--muted);
+}
+body.carding a.u.lit,
+body.carding .greet.lit {
+  color: var(--orange);
+  border-color: var(--orange);
+}
+/* mac-style title bar: traffic lights on the left (red closes), dates on the right */
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 9px 14px 9px 12px;
+  border-bottom: 1px solid var(--line);
+  font-size: 12px;
+}
+.card-dots {
+  display: flex;
+  gap: 7px;
+}
+.card-dots > * {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+.card-x {
+  padding: 0;
+  border: 0;
+  background: #ff5f57;
+  display: grid;
+  place-items: center;
+  font: inherit;
+  font-size: 10px;
+  line-height: 1;
+  color: transparent;
+  cursor: pointer;
+}
+.card-dots:hover .card-x {
+  color: rgb(0 0 0 / 0.6);
+}
+.card-min {
+  background: #febc2e;
+}
+.card-max {
+  background: #28c840;
+}
+.card-role {
+  margin: 12px 14px 0;
+  color: var(--fg);
+  font-size: 14px;
+  font-weight: 500;
+}
+.card-text {
+  margin: 8px 14px 14px;
+}
+.card-text:empty {
+  display: none;
+}
+.card-open {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 12px;
+  text-decoration: none;
+}
+.card-open:hover {
+  color: var(--orange);
+}
+/* phones/tablets and short landscape: a smaller card so it doesn't cover the intro */
+@media (max-width: 899px), (orientation: landscape) and (max-height: 559px) {
+  .card {
+    width: min(260px, calc(100vw - 32px));
+    font-size: 12px;
+    line-height: 1.5;
+    border-radius: 7px;
+  }
+  .card-head {
+    padding: 7px 10px 7px 9px;
+    font-size: 11px;
+  }
+  .card-dots {
+    gap: 5px;
+  }
+  .card-dots > * {
+    width: 9px;
+    height: 9px;
+  }
+  .card-x {
+    font-size: 8px;
+  }
+  .card-role {
+    margin: 9px 10px 0;
+    font-size: 13px;
+  }
+  .card-text {
+    margin: 5px 10px 10px;
+  }
+  .card-open {
+    padding: 7px 10px;
+    font-size: 11px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .card.on {
+    transform: none;
+    transition: none;
+  }
+  .caret.idle::after {
+    animation: none;
+  }
+  .stage,
+  .site-nav,
+  .about p,
+  .links,
+  .hint {
+    animation-name: arrive-plain;
+  }
+}
+
+/* inner pages: same left rail as the rooftop, no roof, and they scroll.
+   the scroller starts below the header so content never slides under the links */
+.page {
+  position: fixed;
+  inset: var(--head) 0 0;
+  overflow-y: auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 64px);
+  /* soft edge where scrolled content meets the header */
+  mask-image: linear-gradient(transparent, #000 20px);
+}
+.page > * {
+  margin-left: clamp(0px, 12vw, 220px);
+  max-width: 40rem;
+}
+.page h1 {
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 400;
+  margin-top: 14vh;
+  margin-bottom: 2.6em;
+}
+/* projects and achievements: one centred column, same width and heading spot on both pages.
+   the heading keeps clear of the scroller's faded top edge, so the header never seems to cover it */
+.page.center > * {
+  width: 100%;
+  max-width: 36rem;
+  margin-inline: auto;
+}
+/* one size ladder on both pages: heading 20 > entry title 15 > text 13 > meta 12 */
+.page.center h1 {
+  margin-top: max(32px, 6vh);
+  margin-bottom: 1.6em;
+  color: var(--fg);
+  font-size: 20px;
+  line-height: 1.4;
+}
+/* projects: one numbered entry at a time in a carousel, each screenshot framed like the
+   info card's window */
+.carousel-track {
+  display: flex;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+}
+.carousel-track::-webkit-scrollbar {
+  display: none;
+}
+.carousel-track:focus-visible {
+  outline: 1px dashed var(--orange);
+  outline-offset: 6px;
+}
+.carousel-slide {
+  flex: 0 0 100%;
+  min-width: 0;
+  scroll-snap-align: center;
+  scroll-snap-stop: always;
+}
+/* ←  ━ · ·  → */
+.carousel-nav {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 14px;
+  margin-top: 24px;
+}
+.carousel-dots {
+  display: flex;
+  align-items: center;
+}
+.carousel-dot {
+  /* the visible dot is the background; the padding makes it easier to hit */
+  width: 22px;
+  height: 22px;
+  padding: 8px;
+  border: 0;
+  background: var(--dim);
+  background-clip: content-box;
+  border-radius: 999px;
+  cursor: pointer;
+  transition:
+    width 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 0.3s;
+}
+.carousel-dot:hover {
+  background-color: var(--muted);
+}
+.carousel-dot[aria-current="true"] {
+  width: 38px;
+  background-color: var(--orange);
+}
+.carousel-arrow {
+  padding: 4px 6px;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.carousel-arrow:hover {
+  color: var(--fg);
+}
+.project-of {
+  color: var(--dim);
+}
+/* 01 - - - - - - - - mar 2026 – apr 2026 */
+.project-rule {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.project-no {
+  color: var(--orange);
+}
+/* the values that cross-blur as the slide changes: outgoing and incoming share one grid cell */
+.swap {
+  display: inline-grid;
+}
+.swap > * {
+  grid-area: 1 / 1;
+  white-space: nowrap;
+}
+.project-tail {
+  flex: 1;
+  display: grid;
+  align-items: center;
+}
+.project-tail > * {
+  grid-area: 1 / 1;
+}
+.project-line {
+  border-top: 1px dashed var(--dim);
+}
+.swap.end {
+  justify-self: end;
+  justify-items: end;
+}
+.project-tail .swap > * {
+  padding-left: 12px;
+  background: var(--bg);
+}
+.project-window {
+  margin: 0 0 20px;
+  overflow: hidden;
+  background: var(--card);
+  border: 1px solid var(--line);
+  /* no shadow: the carousel track clips anything outside the slide */
+  border-radius: 8px;
+}
+.project-bar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 11px;
+}
+.project-dots {
+  display: flex;
+  gap: 6px;
+}
+.project-dots i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--dim);
+  transition: background-color 0.3s;
+}
+/* the lights come on while you're looking at it (or typing into it) */
+:is(.project, .panel):is(:hover, :focus-within) .project-dots i:nth-child(1) {
+  background: #ff5f57;
+}
+:is(.project, .panel):is(:hover, :focus-within) .project-dots i:nth-child(2) {
+  background: #febc2e;
+}
+:is(.project, .panel):is(:hover, :focus-within) .project-dots i:nth-child(3) {
+  background: #28c840;
+}
+/* every screenshot gets the same frame, so the slides (and the dots under them) don't jump;
+   the image fills it (next/image "fill"), so its own size doesn't matter */
+.project-shot {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  /* on short screens it crops wider instead, so the dots under the text stay on screen */
+  max-height: 30vh;
+}
+/* screenshots sit a little dim and muted so they don't shout over the dark page; full colour on hover */
+.project-shot img {
+  object-fit: cover;
+  object-position: top;
+  /* the same filter list in every state (blur included), so the changes between them animate */
+  filter: blur(0px) saturate(0.8) brightness(0.88);
+  transition:
+    filter 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.project:hover .project-shot img {
+  filter: blur(0px) saturate(1) brightness(1);
+}
+/* components/ascii-image.js: characters assemble over the frame while the picture loads,
+   then the picture blurs in and they fade out */
+.ascii-skeleton {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  margin: 0;
+  padding: 6px 8px;
+  overflow: hidden;
+  color: var(--dim);
+  font: inherit;
+  font-size: 11px;
+  line-height: 1.3;
+  white-space: pre;
+  user-select: none;
+  pointer-events: none;
+  transition:
+    opacity 0.5s,
+    filter 0.5s;
+}
+.ascii-img:not(.loaded) img {
+  opacity: 0;
+  filter: blur(12px) saturate(0.8) brightness(0.88);
+}
+.ascii-img.loaded .ascii-skeleton {
+  opacity: 0;
+  filter: blur(4px);
+}
+.project h2 {
+  margin: 0 0 8px;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+.project h2::before {
+  content: "> ";
+  color: var(--dim);
+}
+.project p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.75;
+  /* justified, with hyphenation (lang="en") so the mono spacing doesn't open up rivers */
+  text-align: justify;
+  hyphens: auto;
+}
+.project-link {
+  display: inline-block;
+  margin-top: 14px;
+  font-size: 14px;
+}
+/* achievements: the trophy in its own column, text lined up beside it */
+.award-list {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 32px;
+}
+.award {
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  column-gap: 14px;
+  align-items: start;
+}
+.trophy {
+  /* one title line tall (15px × 1.5), so the icon sits on the title's first line */
+  height: 22.5px;
+  display: grid;
+  place-items: center;
+  font-size: 14px;
+}
+.award h2 {
+  margin: 0 0 6px;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+/* small date / award text right after a title (projects, achievements) */
+.meta {
+  /* spaced by the plain space before it, so a wrapped meta starts flush on its own line */
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 400;
+  white-space: nowrap;
+}
+.award p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.75;
+}
+/* "see photos" under an achievement, and the popup it opens (components/photo-viewer.js) */
+/* .btn comes later in the file and resets the font, hence the doubled class */
+.btn.see-photos {
+  margin-top: 12px;
+  font-size: 12px;
+}
+.viewer {
+  width: min(860px, calc(100vw - 32px));
+  max-width: none;
+  max-height: none;
+  /* the browser centres a modal dialog with margin: auto, which Tailwind's reset takes away */
+  margin: auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--fg);
+  font-family: var(--mono);
+  overflow: visible;
+}
+.viewer[open] {
+  animation: arrive 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.viewer::backdrop {
+  background: rgb(28 30 35 / 0.7);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  animation: arrive-plain 0.4s;
+}
+/* closing plays the way in backwards; components/photo-viewer.js closes the dialog when it ends */
+.viewer.closing {
+  animation: leave 0.3s cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+.viewer.closing::backdrop {
+  animation: leave-plain 0.3s forwards;
+}
+@keyframes leave {
+  to {
+    opacity: 0;
+    filter: blur(8px);
+    transform: scale(0.98);
+  }
+}
+@keyframes leave-plain {
+  to {
+    opacity: 0;
+  }
+}
+.viewer-window {
+  margin: 0;
+  box-shadow: 0 12px 32px rgb(0 0 0 / 0.35);
+}
+.viewer .card-head {
+  color: var(--muted);
+}
+.viewer-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.viewer-count {
+  font-variant-numeric: tabular-nums;
+}
+/* the whole photo, letterboxed on the page colour, in one frame size so the slides don't jump */
+.viewer-shot {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  max-height: 70vh;
+  background: var(--bg);
+}
+.viewer-shot img {
+  object-fit: contain;
+  transition:
+    filter 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.viewer .carousel-nav {
+  margin: 10px 0 12px;
+}
+/* phones: the photos unfold under the achievement as a swipeable row, the next one peeking in */
+.photo-strip {
+  display: flex;
+  gap: 10px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  animation: rise 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.photo-strip::-webkit-scrollbar {
+  display: none;
+}
+.photo-strip li {
+  flex: 0 0 85%;
+  scroll-snap-align: start;
+}
+.photo-strip-shot {
+  position: relative;
+  aspect-ratio: 3 / 2;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--card);
+}
+.photo-strip-shot img {
+  object-fit: cover;
+  transition:
+    filter 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.gallery {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr));
+  gap: 20px;
+}
+.gallery figure {
+  margin: 0;
+}
+.gallery img,
+.gallery-empty {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+.gallery-empty {
+  background: var(--card);
+}
+.gallery figcaption {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* login (pages/d/login): just the heading and the SSO button, centred both ways in the page
+   ("safe": a window too short for it starts at the top and scrolls) */
+.page.login {
+  display: flex;
+  flex-direction: column;
+  justify-content: safe center;
+  text-align: center;
+}
+.page.login h1 {
+  margin-top: 0;
+}
+.sso {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--fg);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  transition:
+    color 0.2s,
+    border-color 0.2s;
+}
+.sso svg {
+  color: var(--muted);
+  transition: color 0.2s;
+}
+.sso:hover,
+.sso:hover svg {
+  color: var(--orange);
+  border-color: var(--orange);
+}
+/* dashboard (pages/d/dashboard): forms live in the project window, one labelled line per field */
+.form-body {
+  display: grid;
+  gap: 14px;
+  padding: 18px 16px;
+}
+.field {
+  display: grid;
+  grid-template-columns: 12ch 1fr;
+  align-items: baseline;
+  column-gap: 12px;
+  font-size: 13px;
+}
+.field > span {
+  color: var(--muted);
+}
+.field :is(input, textarea, select) {
+  width: 100%;
+  min-width: 0;
+  padding: 4px 0;
+  border: 0;
+  border-bottom: 1px dashed var(--dim);
+  border-radius: 0;
+  background: none;
+  color: var(--fg);
+  font: inherit;
+  line-height: 1.75;
+  caret-color: var(--orange);
+  outline: none;
+  transition: border-color 0.2s;
+}
+.field textarea {
+  resize: vertical;
+}
+.field select {
+  cursor: pointer;
+}
+.field :is(input, textarea, select):focus {
+  border-bottom-color: var(--orange);
+}
+.field ::placeholder {
+  color: var(--dim);
+}
+.form-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 20px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+}
+/* small text buttons, underlined dashed like the hint's pet button */
+.btn {
+  padding: 0;
+  border: 0;
+  border-bottom: 1px dashed var(--dim);
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  cursor: pointer;
+  transition:
+    color 0.2s,
+    border-color 0.2s;
+}
+.btn:hover {
+  color: var(--orange);
+  border-color: var(--orange);
+}
+.btn.go {
+  color: var(--fg);
+  border-bottom-style: solid;
+}
+.btn.danger {
+  color: #ff5f57;
+  border-color: #ff5f57;
+}
+/* a link field with its upload button beside it */
+.field-upload {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  min-width: 0;
+}
+.field-upload > :first-child {
+  flex: 1;
+}
+.field-upload .btn {
+  font-size: 12px;
+}
+.form-error {
+  margin: 0 auto 0 0;
+  color: #ff5f57;
+  font-size: 12px;
+}
+.btn:disabled {
+  color: var(--dim);
+  border-color: transparent;
+  cursor: default;
+}
+.dash-note {
+  margin: -0.6em 0 0;
+  color: var(--dim);
+  font-size: 12px;
+}
+.dash-section {
+  margin-top: 40px;
+}
+.dash-head h2 {
+  margin: 0;
+  font-size: inherit;
+  font-weight: 400;
+}
+.dash-head .project-line {
+  flex: 1;
+}
+.dash-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.dash-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--line);
+}
+.dash-main {
+  flex: 1;
+  min-width: 0;
+}
+.dash-row h3 {
+  margin: 0 0 6px;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+.dash-list.projects h3::before {
+  content: "> ";
+  color: var(--dim);
+}
+/* two lines of each description, enough to tell the entries apart */
+.dash-row p {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.75;
+}
+.dash-actions {
+  display: flex;
+  gap: 14px;
+  /* level with the title's first line */
+  height: 22.5px;
+  align-items: center;
+  font-size: 12px;
+}
+.dash-form {
+  margin: 16px 0;
+  animation: rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+.dash-empty {
+  padding: 16px 0;
+  color: var(--dim);
+  font-size: 12px;
+}
+@media (max-width: 519px) {
+  .field {
+    grid-template-columns: 1fr;
+    row-gap: 2px;
+  }
+  .dash-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+}
+/* phones zoom into any input under 16px when it's focused */
+@media (pointer: coarse) {
+  .field :is(input, textarea, select) {
+    font-size: 16px;
+  }
+}
+
+/* phones and tablets held upright: text stacks under the header, and the roof + cat get a band
+   of their own along the bottom (roof rows + ~22 rows of sitting cat + a spare row).
+   the text stops above that band and scrolls if it runs out of room */
+@media (max-width: 899px) and (orientation: portrait) {
+  .col {
+    width: auto;
+    right: 0;
+    bottom: calc(var(--cell) * (var(--roof) + 23));
+    padding-bottom: 16px;
+  }
+  .col > *,
+  .page > * {
+    margin-left: 0;
+  }
+  /* smaller type so the whole intro fits above the cat's band on a phone,
+     centred in the room between header and cat ("safe": start at the top if it doesn't fit) */
+  .intro {
+    align-self: safe center;
+  }
+  .tagline {
+    font-size: 12px;
+    line-height: 1.6;
+    margin-bottom: 1.4em;
+  }
+  .about {
+    font-size: 14px;
+    line-height: 1.75;
+    margin-bottom: 1em;
+  }
+  .links {
+    font-size: 14px;
+  }
+  .hint {
+    font-size: 11px;
+    margin-top: 1.2em;
+  }
+  .page h1 {
+    margin-top: 4vh;
+  }
+}
+
+/* phones on their side (and very short windows): little height, so a compact two-column layout,
+   text on the left kept above the roof, the right side left to the cat and moon */
+@media (orientation: landscape) and (max-height: 559px) {
+  .col {
+    width: min(560px, 58vw);
+    padding-bottom: calc(var(--cell) * var(--roof) + 12px);
+  }
+  .col > *,
+  .page > * {
+    margin-left: 0;
+  }
+  .tagline {
+    font-size: 12px;
+    line-height: 1.6;
+    margin-bottom: 1.2em;
+  }
+  .about {
+    font-size: 14px;
+    line-height: 1.7;
+    margin-bottom: 1em;
+  }
+  .links {
+    font-size: 14px;
+  }
+  .hint {
+    margin-top: 1.2em;
+  }
+  .page h1 {
+    margin-top: 4vh;
+    margin-bottom: 1.6em;
+  }
+}
+
+/* phones (upright, or on their side): the header becomes a floating pill with the page blurred
+   behind it, and its button opens the links as a full-screen menu. last in the file so it wins */
+@media (max-width: 899px) and (orientation: portrait),
+  (orientation: landscape) and (max-height: 559px) {
+  :root {
+    --head: calc(env(safe-area-inset-top, 0px) + 68px);
+  }
+  .site-nav {
+    padding: 0;
+  }
+  /* above the cat while the menu covers the page */
+  .site-nav.open {
+    z-index: 5;
+  }
+  .bar {
+    position: fixed;
+    z-index: 1;
+    top: calc(env(safe-area-inset-top, 0px) + 10px);
+    left: max(12px, env(safe-area-inset-left, 0px));
+    right: max(12px, env(safe-area-inset-right, 0px));
+    height: 46px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 6px 0 20px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: rgb(37 39 45 / 0.55);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    backdrop-filter: blur(18px) saturate(140%);
+    pointer-events: auto;
+  }
+  .brand {
+    color: var(--fg);
+    font-size: 14px;
+    text-decoration: none;
+  }
+  .menu-btn {
+    width: 36px;
+    height: 36px;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: none;
+    color: var(--muted);
+    cursor: pointer;
+    transition: color 0.2s;
+  }
+  .menu-btn:hover,
+  .site-nav.open .menu-btn {
+    color: var(--fg);
+  }
+  .menu {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    padding: var(--head) 16px calc(env(safe-area-inset-bottom, 0px) + 28px);
+    background: rgb(28 30 35 / 0.7);
+    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(20px);
+    opacity: 0;
+    visibility: hidden;
+    transition:
+      opacity 0.3s,
+      visibility 0s 0.3s;
+    pointer-events: auto;
+  }
+  .site-nav.open .menu {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 0.3s;
+  }
+  .menu nav {
+    margin: auto;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.1em;
+    width: auto;
+    font-size: clamp(26px, min(10vw, 8vh), 44px);
+    line-height: 1.2;
+  }
+  .menu nav a {
+    translate: 0 10px;
+    transition:
+      color 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+      translate 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .site-nav.open .menu nav a {
+    translate: 0 0;
+  }
+  /* em here is the square's own size (0.3 of the link), so this keeps about half a letter of gap */
+  .menu .nav-dot {
+    left: -2.4em;
+    font-size: 0.3em;
+  }
+  /* inner pages scroll up under the pill, so it has something to blur */
+  .page {
+    inset: 0;
+    padding-top: var(--head);
+    mask-image: none;
+  }
+}
+/* last in the file, so these win over the rules they soften */
+@media (prefers-reduced-motion: reduce) {
+  .menu nav a {
+    translate: none;
+  }
+  .ascii-img:not(.loaded) img {
+    filter: blur(0px) saturate(0.8) brightness(0.88);
+  }
+  .viewer[open],
+  .viewer::backdrop,
+  .photo-strip,
+  .dash-form {
+    animation-name: arrive-plain;
+  }
+  .viewer.closing,
+  .viewer.closing::backdrop {
+    animation-name: leave-plain;
+  }
+}
