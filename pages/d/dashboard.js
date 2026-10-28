@@ -343,8 +343,11 @@ export default function Dashboard() {
   const router = useRouter();
   const { isLoaded, isSignedIn, sessionId } = useAuth();
   const { user } = useUser();
+  const sentAway = useRef(false);
   useEffect(() => {
-    if (isLoaded && !isSignedIn) transitionTo(router, "/d/login");
+    if (!isLoaded || isSignedIn || sentAway.current) return;
+    sentAway.current = true;
+    transitionTo(router, "/d/login");
   }, [isLoaded, isSignedIn, router]);
 
   const [syncFailed, setSyncFailed] = useState(false);

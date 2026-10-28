@@ -61,6 +61,15 @@ export function PageTransition({ children }) {
   );
 }
 
+function comeBack() {
+  entering = leaving = false;
+  if (!stage) return;
+  const el = stage;
+  animate(el, { opacity: 1, filter: "blur(0px)", scale: 1 }, IN).then(() =>
+    settle(el),
+  );
+}
+
 export function transitionTo(router, href, onGo) {
   if (busy || href === router.pathname) return;
   busy = true;
@@ -79,15 +88,20 @@ export function transitionTo(router, href, onGo) {
       OUT,
     );
   }
-  Promise.all([fade, exitCat(), router.prefetch(href).catch(() => {}), going])
+  const from = router.pathname;
+  Promise.all([
+    fade,
+    exitCat(),
+    Promise.resolve(going).then(() => router.prefetch(href).catch(() => {})),
+  ])
     .then(() => {
       entering = true;
       return router.push(href);
     })
-    .catch(() => {
-      entering = leaving = false;
-      if (stage) settle(stage);
+    .then(() => {
+      if (entering && router.pathname === from) comeBack();
     })
+    .catch(comeBack)
     .finally(() => {
       busy = false;
     });
@@ -200,6 +214,7 @@ export function Nav() {
                 href={href}
                 aria-current={href === pathname ? "page" : undefined}
                 className={href === active ? "on" : undefined}
+                prefetch={out ? false : undefined}
                 onClick={close}
                 onGo={() => {
                   setActive(href);
