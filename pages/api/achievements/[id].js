@@ -1,7 +1,6 @@
 import { failed, notAllowed, refresh, signedIn } from "@/lib/api";
 import { deleteAchievement, saveAchievement } from "@/lib/content";
 
-// PUT: change one achievement. DELETE: remove it
 export default async function handler(req, res) {
   if (!signedIn(req, res)) return;
   const id = Number(req.query.id);

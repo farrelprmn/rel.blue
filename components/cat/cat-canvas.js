@@ -8,15 +8,11 @@ import { canvasFont, fitCanvas, fontReady } from "./scene";
 import { catAt, drawCat } from "./sprite";
 
 const G = 2600;
-// exit choreography timings (seconds): crouch, then take-off to the top of the arc
 const EXIT_CROUCH = 0.32,
   EXIT_RISE = 0.6;
 
-// states: sit → crouch → leap → land → sit while playing on the rooftop;
-// exitCrouch → exit (one ballistic arc over the middle and off the other side) → gone when leaving
 const leaving = (s) => s === "exitCrouch" || s === "exit";
 
-// lives in _app so it survives navigation and can fall through the page change
 export default function CatCanvas() {
   const ref = useRef(null);
   const setHome = useRef(null);
@@ -27,7 +23,6 @@ export default function CatCanvas() {
     const ctx = cv?.getContext("2d");
     if (!cv || !ctx) return;
 
-    // every listener hangs off this signal so unmount (and StrictMode's double effect) tears it all down
     const ac = new AbortController();
     const { signal } = ac;
     const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -81,8 +76,6 @@ export default function CatCanvas() {
       tailLift: 1,
     };
 
-    // where the cat sits on the roof: beside the text when there's room (it's ~12 cells either side
-    // of its x), otherwise the layout is stacked and the CSS keeps the text above the cat's band
     const homeX = () => {
       const lo = 14 * g.cell,
         hi = g.W - 14 * g.cell,
@@ -92,7 +85,6 @@ export default function CatCanvas() {
       return clamp(g.W * 0.62, lo, hi);
     };
 
-    // rehome: the text may have reflowed (fonts loaded, rotation, breakpoint), so sit back down clear of it
     const fit = (rehome = false) => {
       const prevW = g.W;
       g = fitCanvas(cv, ctx, family);
@@ -108,7 +100,6 @@ export default function CatCanvas() {
           : clamp(cat.x, 14 * g.cell, g.W - 14 * g.cell);
     };
 
-    // the cat only lives on the rooftop (home); elsewhere it's gone
     setHome.current = (home) => {
       atHome = home;
       if (!home) {
@@ -116,11 +107,9 @@ export default function CatCanvas() {
         if (!leaving(cat.state)) cat.state = "gone";
         return;
       }
-      // first load: wait until the font is in and the text it sits beside is laid out (see fontReady)
       if (ready) comeHome();
     };
 
-    // hop up from below the roof into the usual spot, on first load as well as on coming back
     const comeHome = () => {
       if (cat.state !== "gone") return;
       Object.assign(cat, {
@@ -158,7 +147,6 @@ export default function CatCanvas() {
         x: clamp(tx + (tx - cat.x) * 0.25, margin, g.W - margin),
         y: 0,
       };
-      // re-measured per jump: the intro's lines may have still been rising when we got home
       plats = findPlatforms(g);
       const p = pickPlat(plats, tx, ty);
       if (p) {
@@ -205,11 +193,6 @@ export default function CatCanvas() {
       addJump();
     };
 
-    // one real jump: a parabola whose top is the middle of the screen, then gravity keeps it going
-    // down and across until it's off the page. left goes over to the right, right to the left,
-    // dead centre is straight up and down. gravity is picked so the top is always EXIT_RISE away,
-    // which keeps the cat in step with the page fade. the top puts the leaping body
-    // (~7 rows tall above the feet) at screen centre
     const startExit = (t) => {
       const top = g.H / 2 + 7 * g.cell - g.groundRow * g.cell,
         rise = Math.max(4 * g.cell, cat.y - top),
@@ -238,7 +221,6 @@ export default function CatCanvas() {
         const t = performance.now() / 1000,
           d = g.W / 2 - cat.x;
         if (Math.abs(d) > 20) cat.dir = d > 0 ? 1 : -1;
-        // already airborne: start the arc from here instead of crouching in mid-air
         if (cat.state === "leap") startExit(t);
         else {
           cat.state = "exitCrouch";
@@ -305,18 +287,15 @@ export default function CatCanvas() {
         dy = 0.9;
         if (t - cat.t0 > 0.2) cat.state = "sit";
       } else if (cat.state === "exit") {
-        // solved from the clock rather than stepped, so dropped frames during the page swap don't slow it
         const s = t - cat.t0;
         cat.vx = arc.vx;
         cat.vy = arc.vy0 + arc.grav * s;
         cat.x = arc.x0 + arc.vx * s;
         cat.y = arc.y0 + arc.vy0 * s + 0.5 * arc.grav * s * s;
-        // over the top: the page change starts while the cat keeps going
         if (cat.vy >= 0 && exitDone) {
           exitDone();
           exitDone = null;
         }
-        // gone once even the ears are below the bottom edge, or it has sailed off a side
         const margin = 25 * g.cell;
         if (
           (g.groundRow - 16) * g.cell + cat.y > g.H ||
@@ -326,7 +305,6 @@ export default function CatCanvas() {
           cat.state = "gone";
       }
 
-      // gaze + turning to face you
       const idle = !pointer.has || t - pointer.last > 8;
       const headX = cat.x + cat.dir * 3.5 * g.cell,
         headY = (g.groundRow - 12) * g.cell + cat.y;
@@ -355,7 +333,6 @@ export default function CatCanvas() {
         }
       } else cat.flipT = 0;
 
-      // blinks: quick ones, plus a slow "cat kiss" blink after a pet
       if (!reduce && t > nextBlink) {
         blinkStart = t;
         slowBlink = Math.random() < 0.18;
@@ -424,7 +401,6 @@ export default function CatCanvas() {
     };
     const closest = (e, sel) =>
       e.target instanceof Element ? e.target.closest(sel) : null;
-    // on text, wait for the release so dragging / double-clicking to select doesn't send the cat
     let press = null,
       pendingJump = 0;
     addEventListener(
@@ -471,7 +447,6 @@ export default function CatCanvas() {
       fit(true);
       ready = true;
       raf = requestAnimationFrame(frame);
-      // a beat into the page's blur-in (globals.css "arrive"), so the cat jumps into a scene that's there
       if (atHome) introT = setTimeout(comeHome, reduce ? 0 : 450);
     });
 
@@ -479,7 +454,6 @@ export default function CatCanvas() {
       ac.abort();
       offPet();
       offExit();
-      // never leave a page transition waiting on a cat that no longer exists
       exitDone?.();
       setHome.current = null;
       cancelAnimationFrame(raf);

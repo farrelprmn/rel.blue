@@ -14,11 +14,8 @@ const geistMono = Geist_Mono({
   weight: ["400", "500"],
 });
 
-// the icon CSS is imported above, so it's in the server render; stop Font Awesome injecting it again at runtime
 config.autoAddCss = false;
 
-// Clerk's sign-in modal in the site's colours and font. it renders outside .app, so it gets the font
-// by name rather than through --mono
 const clerkAppearance = {
   variables: {
     colorPrimary: "#e98a3c",
@@ -34,7 +31,6 @@ const clerkAppearance = {
   },
 };
 
-// _app stays mounted across navigation, so the cat lives here and can fall through a page change
 export default function App({ Component, pageProps }) {
   return (
     <ClerkProvider

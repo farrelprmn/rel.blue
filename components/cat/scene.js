@@ -1,7 +1,6 @@
 import { ell, hash } from "./geometry";
 import { P } from "./palette";
 
-// next/font gives the family a generated name; the canvas inherits it from the page, read it back
 export const canvasFont = (cv) => getComputedStyle(cv).fontFamily;
 
 export const fontReady = (family) =>
@@ -9,8 +8,6 @@ export const fontReady = (family) =>
     ? document.fonts.load(`12px ${family}`).catch(() => {})
     : Promise.resolve();
 
-// size the canvas to the window and derive the character grid from it;
-// the scene and the cat canvases both call this so their cells line up
 export function fitCanvas(cv, ctx, family) {
   const dpr = Math.min(2, window.devicePixelRatio || 1);
   const W = innerWidth,
@@ -65,9 +62,6 @@ export function drawScene(ctx, g, stars, t, reduce) {
     ctx.fillText(st.ch, st.i * cell + cell / 2, st.j * cell + cell / 2);
   }
   ctx.globalAlpha = 1;
-  // moon: top right on wide screens; phones on their side (same test as the short-landscape
-  // block in globals.css) tuck it into the corner right of the cat; upright phones/tablets would
-  // have it on the text, so it hangs low on the left inside the roof band instead
   const upright = mobile && g.H > g.W,
     short = g.H < 560 && g.W > g.H;
   const mx = upright ? 8 : short ? cols - 7 : cols - 16,
@@ -82,7 +76,6 @@ export function drawScene(ctx, g, stars, t, reduce) {
         cellRect(ctx, g, i, j, cr ? P.crater : P.moon, cr ? "o" : ".");
       }
     }
-  // rooftop: ridge line, then rows of tiles
   for (let i = 0; i < cols; i++) cellRect(ctx, g, i, groundRow, P.ridge, "_");
   for (let j = groundRow + 1; j < rows; j++) {
     const off = (j - groundRow) % 2;

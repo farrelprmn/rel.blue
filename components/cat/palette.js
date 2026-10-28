@@ -1,4 +1,3 @@
-// palette entry: [cell fill (null = glyph only), glyph colour]
 export const P = {
   fur: ["#de7630", "#ffcf9c"],
   fur2: ["#e88a44", "#ffdcb2"],

@@ -2,14 +2,9 @@ import { useRouter } from "next/router";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { clamp } from "./cat/geometry";
 
-// popup for any element with data-role (data-period and data-text are optional):
-// hover with a mouse, first tap on touch (a second tap follows the link).
-// rendered by _app outside the page-transition wrapper, so nothing the transition leaves on that
-// wrapper can drop the card under the cat canvas; it re-binds to the new page's links on each route
 export default function InfoCard() {
   const ref = useRef(null);
   const { pathname } = useRouter();
-  // { el, role, period, text, href } of the element the card is (or was last) about
   const [info, setInfo] = useState(null);
   const [open, setOpen] = useState(false);
 
@@ -31,7 +26,6 @@ export default function InfoCard() {
         role: d.role || "",
         period: d.period || "",
         text: d.text || "",
-        // the greeting has no site to open
         href: a instanceof HTMLAnchorElement ? a.href : "",
       });
       setOpen(true);
@@ -97,8 +91,7 @@ export default function InfoCard() {
       "pointerdown",
       (e) => {
         const inside =
-          e.target instanceof Element &&
-          e.target.closest(".card, [data-role]");
+          e.target instanceof Element && e.target.closest(".card, [data-role]");
         if (cardFor && !inside) hide();
       },
       { signal },
@@ -118,7 +111,6 @@ export default function InfoCard() {
     };
   }, [pathname]);
 
-  // place above the link, or below it when there's no room
   useLayoutEffect(() => {
     const card = ref.current;
     if (!card || !info) return;
@@ -130,7 +122,6 @@ export default function InfoCard() {
       (r.top - ch - 10 >= 16 ? r.top - ch - 10 : r.bottom + 10) + "px";
   }, [info]);
 
-  // while a card is open, everything but its link fades to the tagline grey
   useEffect(() => {
     if (!open || !info) return;
     const el = info.el;

@@ -1,7 +1,6 @@
 import { failed, notAllowed, refresh, signedIn } from "@/lib/api";
 import { getProjects, saveProject } from "@/lib/content";
 
-// GET: every project for the dashboard. POST: add one
 export default async function handler(req, res) {
   if (!signedIn(req, res)) return;
   try {

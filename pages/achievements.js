@@ -10,17 +10,12 @@ import { optimisable } from "@/lib/images";
 import { usePhone } from "@/lib/phone";
 import { TROPHY } from "@/lib/trophy";
 
-// from the database at build, then again at most once a minute; the dashboard's API also refreshes
-// the page straight after each change
 export async function getStaticProps() {
   return { props: { achievements: await getAchievements() }, revalidate: 60 };
 }
 
-// photos open in a popup on bigger screens; on phones they unfold under the achievement instead,
-// as a row you swipe through
 export default function Achievements({ achievements }) {
   const phone = usePhone();
-  // the achievement whose photos are open, if any
   const [viewing, setViewing] = useState(null);
   return (
     <div className="page center">

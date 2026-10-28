@@ -5,14 +5,11 @@ import { useRouter } from "next/router";
 import { useEffect, useRef, useState } from "react";
 import { exitCat } from "./cat/controls";
 
-// page transition: the old page blurs + fades out while the cat arcs up over the middle,
-// then the new page blurs + fades in while it comes down the other side and drops off the bottom
 let stage = null;
 let entering = false;
 let leaving = false;
 let busy = false;
 
-// true while the old page is fading out; the scene canvas freezes so the blur isn't redone every frame
 export const isLeaving = () => leaving;
 
 const reduced = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -21,7 +18,6 @@ const BLUR = 8;
 const OUT = { duration: 0.9, ease: [0.4, 0, 0.2, 1] };
 const IN = { duration: 0.8, ease: [0.16, 1, 0.3, 1] };
 
-// drop the inline styles so the stage stops being a stacking context / containing block
 const settle = (el) =>
   ["opacity", "filter", "transform", "will-change"].forEach((p) =>
     el.style.removeProperty(p),
@@ -34,8 +30,6 @@ export function PageTransition({ children }) {
 
   useEffect(() => {
     stage = ref.current;
-    // the load-only intro animations in globals.css stop once we've moved between pages
-    // (nav links, back/forward alike)
     const navigated = () => document.documentElement.classList.add("navigated");
     router.events.on("routeChangeStart", navigated);
     return () => {
@@ -44,7 +38,6 @@ export function PageTransition({ children }) {
     };
   }, [router.events]);
 
-  // the new page is already in the DOM, still invisible from the exit; bring it in
   useEffect(() => {
     const el = ref.current;
     if (!el || !entering) return;
@@ -68,8 +61,6 @@ export function PageTransition({ children }) {
   );
 }
 
-// the same way out as a link, for code (a form submit) that moves to another page.
-// if onGo returns a promise (signing out), the new page waits for it as well as the fade
 export function transitionTo(router, href, onGo) {
   if (busy || href === router.pathname) return;
   busy = true;
@@ -94,7 +85,6 @@ export function transitionTo(router, href, onGo) {
       return router.push(href);
     })
     .catch(() => {
-      // navigation failed: put the old page back
       entering = leaving = false;
       if (stage) settle(stage);
     })
@@ -121,29 +111,20 @@ const LINKS = [
   { href: "/", label: "home" },
   { href: "/projects", label: "projects" },
   { href: "/achievements", label: "achievements" },
-  // its own site: a plain link in a new tab, no page transition
   { href: "https://forest.rel.blue", label: "forest" },
 ];
 
-// the dashboard keeps the same header, with logout where forest was: it signs out of Clerk while the
-// page fades, then lands on the login page
 const DASHBOARD_LINKS = [
   ...LINKS.slice(0, 3),
   { href: "/d/login", label: "logout", signOut: true },
 ];
 
-// where the square sits on a page: its own link, except the dashboard (not in the header), where
-// it rests on logout
 const restingSpot = (pathname) =>
   pathname === "/d/dashboard" ? "/d/login" : pathname;
 
-// header lives in _app, outside the transition, so it never blurs.
-// desktop: one quiet line of links. phones: a blurred pill (name + menu button) that opens
-// the links as a full-screen menu; .bar and .menu are laid out by globals.css
 export function Nav() {
   const { pathname } = useRouter();
   const { signOut } = useClerk();
-  // the square moves on click, not after the page has changed; it follows the route for back/forward
   const [active, setActive] = useState(() => restingSpot(pathname));
   const [seen, setSeen] = useState(pathname);
   const [open, setOpen] = useState(false);
@@ -218,12 +199,10 @@ export function Nav() {
                 key={label}
                 href={href}
                 aria-current={href === pathname ? "page" : undefined}
-                // highlight follows the square (moves on click), aria-current follows the real route
                 className={href === active ? "on" : undefined}
                 onClick={close}
                 onGo={() => {
                   setActive(href);
-                  // a callback instead of Clerk's own redirect, so the transition does the navigating
                   if (out) return signOut(() => {});
                 }}
               >

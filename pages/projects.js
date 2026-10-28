@@ -7,16 +7,12 @@ import Seo from "@/components/seo";
 import { getProjects } from "@/lib/content";
 import { optimisable } from "@/lib/images";
 
-// from the database at build, then again at most once a minute; the dashboard's API also refreshes
-// the page straight after each change
 export async function getStaticProps() {
   return { props: { projects: await getProjects() }, revalidate: 60 };
 }
 
 const pad = (n) => String(n).padStart(2, "0");
 
-// replaces its text in place whenever `k` changes: old and new are stacked in one grid cell and
-// cross-blur, so the spot is never empty
 function Swap({ k, children, end }) {
   const reduce = useReducedMotion();
   const hidden = { opacity: 0, filter: reduce ? "blur(0px)" : "blur(4px)" };

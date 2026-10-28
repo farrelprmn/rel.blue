@@ -1,8 +1,13 @@
 import { useEffect, useRef } from "react";
 import { isLeaving } from "../navigation";
-import { canvasFont, drawScene, fitCanvas, fontReady, makeStars } from "./scene";
+import {
+  canvasFont,
+  drawScene,
+  fitCanvas,
+  fontReady,
+  makeStars,
+} from "./scene";
 
-// stars, moon and rooftop; lives in the home page so it blurs out with it
 export default function SceneCanvas() {
   const ref = useRef(null);
 
@@ -23,7 +28,6 @@ export default function SceneCanvas() {
       stars = makeStars(g);
     };
     const frame = (ms) => {
-      // hold the last frame while the page blurs out, so the browser can blur a still image
       if (g && !isLeaving()) {
         ctx.clearRect(0, 0, g.W, g.H);
         drawScene(ctx, g, stars, ms / 1000, reduce);

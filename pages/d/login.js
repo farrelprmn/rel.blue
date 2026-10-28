@@ -5,8 +5,6 @@ import Head from "next/head";
 import { TransitionLink } from "@/components/navigation";
 import Typewriter from "@/components/typewriter";
 
-// the button goes to Clerk's hosted sign-in (NEXT_PUBLIC_CLERK_SIGN_IN_URL in .env), which comes back
-// to the dashboard with the session. a load of this page while signed in is redirected by proxy.js
 export default function Login() {
   const { redirectToSignIn } = useClerk();
 

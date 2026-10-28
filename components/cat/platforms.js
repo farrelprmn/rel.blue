@@ -1,7 +1,5 @@
-// text lines the cat can stand on (desktop + tablet)
 const SURFACES = ".tagline, .about p, .links, .hint";
 
-// one { x1, x2, top, bottom } per visual line of text, merged across inline boxes
 export function findPlatforms(g) {
   if (g.W < 600) return [];
   const plats = [];
@@ -27,7 +25,6 @@ export function findPlatforms(g) {
   return plats.filter((p) => p.top > 23 * g.cell);
 }
 
-// right edge of the rendered text lines, so the cat can sit clear of them
 export function textRight() {
   let right = 0;
   document.querySelectorAll(SURFACES).forEach((el) => {
@@ -42,7 +39,12 @@ export function pickPlat(plats, tx, ty) {
   let best = null,
     bd = 1e9;
   for (const p of plats) {
-    if (tx < p.x1 - 12 || tx > p.x2 + 12 || ty < p.top - 80 || ty > p.bottom + 6)
+    if (
+      tx < p.x1 - 12 ||
+      tx > p.x2 + 12 ||
+      ty < p.top - 80 ||
+      ty > p.bottom + 6
+    )
       continue;
     const d = Math.abs(ty - p.top);
     if (d < bd) {

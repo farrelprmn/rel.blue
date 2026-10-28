@@ -1,6 +1,5 @@
 import { useSyncExternalStore } from "react";
 
-// tiny shared state between the canvas and the DOM controls (pet button, jump counter)
 let jumps = 0;
 const jumpListeners = new Set();
 const petListeners = new Set();
@@ -30,8 +29,6 @@ function pet() {
   petListeners.forEach((fn) => fn());
 }
 
-// page transitions ask the cat to leap off; resolves at the top of the leap
-// (or right away when there's no cat on screen)
 let exitHandler = null;
 
 export function onExit(fn) {

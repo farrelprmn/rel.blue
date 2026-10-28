@@ -2,10 +2,8 @@ import { randomUUID } from "node:crypto";
 import { failed, notAllowed, signedIn } from "@/lib/api";
 import { FOLDERS, upload } from "@/lib/s3";
 
-// the file arrives as the raw request body (Content-Type: image/…), not a form, so Next's parser stays off
 export const config = { api: { bodyParser: false } };
 
-// under the proxy's 10MB request buffer
 const MAX = 8 * 1024 * 1024;
 const EXT = {
   "image/png": "png",
@@ -15,7 +13,6 @@ const EXT = {
   "image/avif": "avif",
 };
 
-// POST /api/upload?folder=projects&name=forest.png → { url } of the stored file in rel.blue/<folder>/
 export default async function handler(req, res) {
   if (req.method !== "POST") return notAllowed(res, ["POST"]);
   if (!signedIn(req, res)) return;
@@ -39,7 +36,6 @@ export default async function handler(req, res) {
   }
   if (!size) return res.status(400).json({ error: "empty file" });
 
-  // the original name, made URL-safe, plus a short random part so uploads never overwrite each other
   const base =
     String(req.query.name ?? "")
       .replace(/\.[^.]*$/, "")

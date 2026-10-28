@@ -1,17 +1,11 @@
 import { Fragment, useEffect, useState } from "react";
 
-// types `text` out once per visit behind a terminal-style block caret; "\n" breaks the line.
-// untyped characters are already laid out, only transparent, so the line widths the cat
-// measures to stand on never change, and screen readers get the whole sentence from the start
-// (once per text, so each page's heading gets its own first time)
 const played = new Set();
 
-// pause after typing `ch`: a beat at the end of a sentence, quick over spaces, a little jitter otherwise
 const delay = (ch) =>
   ch === "." || ch === "\n" ? 240 : ch === " " ? 35 : 18 + Math.random() * 24;
 
 export default function Typewriter({ text, className, as: Tag = "p" }) {
-  // the server and hydration render nothing typed; coming back to the page shows it all
   const [n, setN] = useState(() => (played.has(text) ? text.length : 0));
 
   useEffect(() => {
@@ -25,7 +19,6 @@ export default function Typewriter({ text, className, as: Tag = "p" }) {
       if (i >= text.length) played.add(text);
       else t = setTimeout(step, delay(text[i - 1]));
     };
-    // starts once the page's blur-in is mostly through
     t = setTimeout(step, reduce ? 0 : 800);
     return () => clearTimeout(t);
   }, [text]);

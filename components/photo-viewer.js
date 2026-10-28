@@ -3,11 +3,6 @@ import AsciiImage from "@/components/ascii-image";
 import Carousel from "@/components/carousel";
 import { optimisable } from "@/lib/images";
 
-// an achievement's photos in a popup: the info card's window (red light closes it) around the same
-// carousel as the projects page, each photo drawn in with the ASCII skeleton. a modal <dialog>, so
-// it sits above everything, keeps focus inside, and Escape or a click outside closes it. closing
-// plays a short fade-out first (.closing in globals.css), and the dialog shuts when that ends.
-// mount it to open it; onClose fires once it has closed
 export default function PhotoViewer({ title, photos, onClose }) {
   const dialog = useRef(null);
   const [index, setIndex] = useState(0);
@@ -19,7 +14,6 @@ export default function PhotoViewer({ title, photos, onClose }) {
     return () => el.open && el.close();
   }, []);
 
-  // in case the fade-out's end never arrives, it still shuts a little after it should have
   const close = () => {
     setClosing(true);
     const el = dialog.current;
@@ -31,17 +25,14 @@ export default function PhotoViewer({ title, photos, onClose }) {
       className={closing ? "viewer closing" : "viewer"}
       aria-label={`Photos from ${title}`}
       onClose={onClose}
-      // Escape: fade out like the other ways of closing, instead of vanishing
       onCancel={(e) => {
         e.preventDefault();
         close();
       }}
-      // only the window's own fade-out, not the backdrop's or anything inside it
       onAnimationEnd={(e) => {
         if (closing && e.target === e.currentTarget && !e.pseudoElement)
           dialog.current.close();
       }}
-      // the dialog box itself is only the backdrop around the window
       onClick={(e) => e.target === e.currentTarget && close()}
     >
       <div className="project-window viewer-window">

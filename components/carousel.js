@@ -1,10 +1,6 @@
 import { animate } from "motion/react";
 import { Children, useCallback, useEffect, useRef, useState } from "react";
 
-// one slide at a time on a scroll-snap track (so touch swipes and trackpads just work), with dots
-// and arrows under it. it moves on by itself every `every` ms (0: never), but holds still while the
-// pointer or focus is on it, and never for prefers-reduced-motion. `onIndex` hears which slide is showing,
-// for anything outside the track that follows along
 export default function Carousel({ children, label, every = 6000, onIndex }) {
   const track = useRef(null);
   const slides = Children.toArray(children);
@@ -16,8 +12,6 @@ export default function Carousel({ children, label, every = 6000, onIndex }) {
     onIndex?.(index);
   }, [index, onIndex]);
 
-  // one step slides; anything farther (4 → 1 wrapping round, or a far dot) blurs out, jumps
-  // straight there and blurs back in, instead of scrolling past every slide in between
   const jumping = useRef(false);
   const go = useCallback(
     (i) => {
@@ -51,7 +45,6 @@ export default function Carousel({ children, label, every = 6000, onIndex }) {
     [index, n],
   );
 
-  // the dot follows the scroll position, however the track got there
   const onScroll = () => {
     const el = track.current;
     if (el) setIndex(Math.round(el.scrollLeft / el.clientWidth));
@@ -65,7 +58,6 @@ export default function Carousel({ children, label, every = 6000, onIndex }) {
       matchMedia("(prefers-reduced-motion: reduce)").matches
     )
       return;
-    // restarts on every slide change, so a manual move gets a full interval before the next one
     const t = setTimeout(() => go(index + 1), every);
     return () => clearTimeout(t);
   }, [index, held, n, every, go]);

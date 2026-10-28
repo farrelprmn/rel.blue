@@ -2,11 +2,6 @@ import { clamp, ell, hash, inTri, lerp, segD, tailD } from "./geometry";
 import { P } from "./palette";
 import { cellRect } from "./scene";
 
-// ---- the cat, sampled one cell at a time; local coords face right, y = 0 is the roof line ----
-// f is the animation frame: { t, look, lid, pitch, e, dy, wiggle, happy, chill, pose, twitch, tailSwish, tailLift }
-// each sampler returns [palette, glyph] for a covered cell, or null
-
-// eyes: almond shape on whole cells, dark upper rim heavier at the outer corner, slit pupil
 function eyeCell(f, dx, dy, outer, lidAmt, happy) {
   const o = dx * outer;
   const inside =
@@ -29,7 +24,6 @@ function eyeCell(f, dx, dy, outer, lidAmt, happy) {
   return dy <= first ? [P.iris2, ":"] : [P.eye, "."];
 }
 
-// sitting: chibi proportions, big round head, small loaf body
 function sitCell(f, x, y) {
   for (const [ex, outer] of [
     [-0.5, -1],
@@ -92,9 +86,7 @@ function sitCell(f, x, y) {
   return null;
 }
 
-// crouching / leaping: same big head carried in front of a stretched body
 function leapCell(f, x0, y0) {
-  // the head stays level while the body pitches, so the face never gets sheared on the grid
   const p = f.pitch,
     yl = y0 - f.dy;
   const hcx = 7 * Math.cos(p) + 2.4 * Math.sin(p),
@@ -171,7 +163,6 @@ function leapCell(f, x0, y0) {
   return null;
 }
 
-// what the cat covers at grid cell (i, j), in screen grid coords
 export function catAt(f, g, cat, i, j) {
   const sit = f.pose === "sit";
   const cx = sit ? Math.round(cat.x / g.cell) : cat.x / g.cell,
@@ -201,7 +192,6 @@ export function drawCat(ctx, g, f, cat) {
         cellRect(ctx, g, i0 + i, j0 + j, r[0], r[1]);
         continue;
       }
-      // sticker outline around the silhouette, never below the feet
       if (j0 + j + 0.5 - g.groundRow - cat.y / g.cell > 0) continue;
       if (
         solid(i - 1, j) ||

@@ -8,9 +8,6 @@ import { isLeaving, transitionTo } from "@/components/navigation";
 import Typewriter from "@/components/typewriter";
 import { TROPHY } from "@/lib/trophy";
 
-// signed-in only (Clerk). projects and achievements come from the database through /api/projects
-// and /api/achievements, and every save / delete goes straight back there (lib/content.js);
-// images upload to S3 through /api/upload. the fields follow presequities/uml.uxf
 const PROJECT_FIELDS = [
   { key: "name", label: "name", required: true, maxLength: 50 },
   {
@@ -20,7 +17,6 @@ const PROJECT_FIELDS = [
     placeholder: "from the name if empty",
   },
   { key: "period", label: "duration", maxLength: 50 },
-  // `upload` names the S3 folder (rel.blue/<folder>/) the button puts files in
   { key: "image", label: "image", upload: "projects" },
   { key: "href", label: "link" },
   { key: "text", label: "description", rows: 4 },
@@ -48,7 +44,6 @@ const slugify = (s) =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "") || "untitled";
 
-// json in and out of the API; a failed call throws the server's message
 async function api(url, method = "GET", body) {
   const res = await fetch(url, {
     method,
@@ -61,7 +56,6 @@ async function api(url, method = "GET", body) {
   return data;
 }
 
-// picks an image and sends it to S3 (rel.blue/<folder>/), then hands back its public URL
 function UploadButton({ folder, onUrl, onError }) {
   const file = useRef(null);
   const [busy, setBusy] = useState(false);
@@ -105,13 +99,10 @@ function UploadButton({ folder, onUrl, onError }) {
   );
 }
 
-// the project window again, holding a form: one labelled line per field, cancel / save underneath.
-// onSave goes to the database; the form stays open (with the reason) if that fails
 function Editor({ path, fields, values, onSave, onCancel }) {
   const form = useRef(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
-  // an uploaded image's URL goes in its field: replacing a single link, added as a line to a list
   const put = (key, url) => {
     const el = form.current.elements.namedItem(key);
     el.value =
@@ -170,7 +161,6 @@ function Editor({ path, fields, values, onSave, onCancel }) {
               name={key}
               type="text"
               defaultValue={values[key]}
-              // the form opens because you asked to type into it
               autoFocus={i === 0}
               {...input}
             />
@@ -211,7 +201,6 @@ function Editor({ path, fields, values, onSave, onCancel }) {
   );
 }
 
-// asks once: the first click turns it red for a few seconds, a second click deletes
 function DeleteButton({ onDelete }) {
   const [sure, setSure] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -228,7 +217,6 @@ function DeleteButton({ onDelete }) {
       onClick={async () => {
         if (!sure) return setSure(true);
         setBusy(true);
-        // on success the row is gone; on failure it stays and says so
         if (!(await onDelete())) {
           setBusy(false);
           setSure(false);
@@ -240,8 +228,6 @@ function DeleteButton({ onDelete }) {
   );
 }
 
-// projects 04 - - - - - - - - - + new, then one row per entry; a row being edited turns into its form
-// `items` is null while loading. new entries go to the top of the list until the next load sorts them
 function Section({
   title,
   path,
@@ -254,7 +240,6 @@ function Section({
 }) {
   const id = useId();
   const url = `/api/${path}`;
-  // an item's id, "new", or null
   const [editing, setEditing] = useState(null);
   const [error, setError] = useState(null);
   const save = async (data) => {
@@ -352,20 +337,16 @@ function Section({
   );
 }
 
-// sessions already written to the `user` table on this visit
 const synced = new Set();
 
 export default function Dashboard() {
   const router = useRouter();
   const { isLoaded, isSignedIn, sessionId } = useAuth();
   const { user } = useUser();
-  // proxy.js turns away full page loads without a session; this covers client-side moves here
-  // (and signing out in another tab)
   useEffect(() => {
     if (isLoaded && !isSignedIn) transitionTo(router, "/d/login");
   }, [isLoaded, isSignedIn, router]);
 
-  // Clerk let them in, so they go in the database (pages/api/auth/sync.js); once per login
   const [syncFailed, setSyncFailed] = useState(false);
   useEffect(() => {
     if (!sessionId || synced.has(sessionId)) return;
@@ -399,7 +380,6 @@ export default function Dashboard() {
       <meta name="robots" content="noindex" />
     </Head>
   );
-  // nothing to show until Clerk knows who this is; on logout the content stays while the page fades
   if (!isSignedIn && !isLeaving())
     return <div className="page center">{head}</div>;
 

@@ -1,12 +1,6 @@
 import { getAchievements, getProjects } from "@/lib/content";
 import { DESCRIPTION, SITE_NAME, SITE_URL, SOCIALS } from "@/lib/site";
 
-// /llm.md (and /llms.txt): the whole site as one markdown file for language models, the way
-// llms.txt suggests. what the pages are, who it's about, then every project and achievement
-// straight from the database, so it never falls behind the dashboard. served through a rewrite
-// in next.config.mjs; robots.txt points here
-
-// one line of plain text inside markdown: no line breaks, nothing read as a link or emphasis
 const inline = (s) =>
   String(s ?? "")
     .replace(/\s+/g, " ")
@@ -109,7 +103,6 @@ export default async function handler(req, res) {
       getAchievements(),
     ]);
     res.setHeader("Content-Type", "text/markdown; charset=utf-8");
-    // fresh enough for crawlers without asking the database on every hit
     res.setHeader(
       "Cache-Control",
       "public, s-maxage=300, stale-while-revalidate=3600",

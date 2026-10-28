@@ -1,6 +1,3 @@
-// short-lived canvas effects: click markers, landing dust, floating "prr" words.
-// each list is pruned in place as entries age out
-
 export function drawMarks(ctx, g, marks, t) {
   const { cell } = g;
   for (let k = marks.length - 1; k >= 0; k--) {

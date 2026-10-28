@@ -1,8 +1,6 @@
 import Head from "next/head";
 import { DESCRIPTION, SITE_NAME as SITE, SITE_URL, SOCIALS } from "@/lib/site";
 
-// title, description and the share card for one page. the card image (public/og.png) is the
-// homepage in a window; `person` adds who this site is about, for search engines (home only)
 export default function Seo({
   title,
   description = DESCRIPTION,
@@ -54,7 +52,6 @@ export default function Seo({
         <script
           type="application/ld+json"
           key="person"
-          // a fixed object of ours, not user input
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               "@context": "https://schema.org",

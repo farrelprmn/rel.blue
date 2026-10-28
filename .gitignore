@@ -134,3 +134,9 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+# Clerk CLI keyless app state (holds a claim token)
+.clerk/
+
+# macOS
+.DS_Store
