@@ -1096,6 +1096,10 @@ body.carding .greet.lit {
   font-size: 13px;
   line-height: 1.75;
 }
+/* long destination urls have no spaces to wrap at */
+.dash-row p.dash-dest {
+  overflow-wrap: anywhere;
+}
 .dash-actions {
   display: flex;
   gap: 14px;

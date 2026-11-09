@@ -37,6 +37,23 @@ const ACHIEVEMENT_FIELDS = [
   },
 ];
 
+const LINK_FIELDS = [
+  { key: "title", label: "title", required: true, maxLength: 100 },
+  {
+    key: "slug",
+    label: "link",
+    maxLength: 50,
+    placeholder: "rel.blue/… (random if empty)",
+  },
+  {
+    key: "destination",
+    label: "destination",
+    type: "url",
+    required: true,
+    placeholder: "https://",
+  },
+];
+
 const pad = (n) => String(n).padStart(2, "0");
 const slugify = (s) =>
   s
@@ -366,13 +383,19 @@ export default function Dashboard() {
 
   const [projects, setProjects] = useState(null);
   const [achievements, setAchievements] = useState(null);
+  const [links, setLinks] = useState(null);
   const [loadFailed, setLoadFailed] = useState(null);
   useEffect(() => {
     if (!isSignedIn) return;
-    Promise.all([api("/api/projects"), api("/api/achievements")])
-      .then(([p, a]) => {
+    Promise.all([
+      api("/api/projects"),
+      api("/api/achievements"),
+      api("/api/links"),
+    ])
+      .then(([p, a, l]) => {
         setProjects(p);
         setAchievements(a);
+        setLinks(l);
       })
       .catch((err) => setLoadFailed(err.message));
   }, [isSignedIn]);
@@ -437,6 +460,30 @@ export default function Dashboard() {
               {a.text && <p>{a.text}</p>}
             </div>
           </div>
+        )}
+      />
+      <Section
+        title="links"
+        path="links"
+        fields={LINK_FIELDS}
+        blank={{}}
+        items={links}
+        setItems={setLinks}
+        row={(l) => (
+          <>
+            <h3>
+              {l.title}{" "}
+              <a
+                className="u meta"
+                href={`/${l.slug}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                rel.blue/{l.slug}
+              </a>
+            </h3>
+            <p className="dash-dest">→ {l.destination}</p>
+          </>
         )}
       />
     </div>

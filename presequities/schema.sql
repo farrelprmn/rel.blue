@@ -40,3 +40,15 @@ CREATE TABLE achievements_image (
     FOREIGN KEY (achievements_id) REFERENCES achievements (achievements_id)
     ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- not in the UML: short links, rel.blue/<link_slug> redirects to link_destination.
+-- never listed in the sitemap, llms.txt or robots.txt; the redirect itself is sent with X-Robots-Tag: noindex
+CREATE TABLE links (
+  link_id          BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  link_title       VARCHAR(100) NOT NULL,
+  -- lowercase a-z, 0-9 and dashes; the collation makes it unique case-insensitively
+  link_slug        VARCHAR(50) NOT NULL,
+  link_destination TEXT NOT NULL,
+  created_at       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_links_slug (link_slug)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
